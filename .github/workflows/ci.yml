@@ -22,7 +22,7 @@ jobs:
       - uses: actions/checkout@v4
 
       # Versions match .mise.toml.
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v6
         with:
           version: 10.34.3
 
