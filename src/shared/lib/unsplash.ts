@@ -8,7 +8,6 @@ export const srcSet = (id: string) => WIDTHS.map((w) => `${img(id, w)} ${w}w`).j
 
 /* Common slot widths. On md+ the grids are 6 columns inside a max-w-6xl (1152px) container. */
 export const SIZES = {
-  full: "100vw",
   twoThirds: "(min-width: 1152px) 720px, (min-width: 768px) 64vw, 100vw",
   third: "(min-width: 1152px) 360px, (min-width: 768px) 32vw, 100vw",
 } as const;

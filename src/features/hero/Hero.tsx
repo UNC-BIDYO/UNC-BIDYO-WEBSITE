@@ -62,7 +62,7 @@ export function Hero() {
 
       <Container className="relative flex flex-1 items-end pb-20 pt-12 sm:pb-24">
         <div>
-          <h1 className="mt-5 max-w-5xl font-display text-display uppercase leading-[0.88] motion-safe:animate-settle">
+          <h1 className="max-w-5xl font-display text-display uppercase leading-[0.88] motion-safe:animate-settle">
             Capturing the moments of every UNCean.
           </h1>
           <p className="mt-6 max-w-xl text-lg leading-relaxed text-white sm:text-xl motion-safe:animate-rise motion-safe:[animation-delay:260ms]">

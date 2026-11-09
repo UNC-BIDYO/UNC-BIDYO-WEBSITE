@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import { cx } from "@/shared/lib/cx";
-import { img, srcSet } from "@/shared/lib/unsplash";
+import type { Photo } from "./photos";
 
 type CyclingTileProps = {
-  photos: string[];
+  photos: Photo[];
   sizes: string;
   label: string;
   caption: string;
@@ -35,7 +35,7 @@ export function CyclingTile({
     n === 0 || n <= furthest || (firstLoaded && !paused && n === furthest + 1);
 
   useEffect(() => {
-    if (stopped) return;
+    if (stopped || photos.length < 2) return;
     let timer: number | undefined;
     const start = window.setTimeout(() => {
       timer = window.setInterval(() => setI((n) => (n + 1) % photos.length), interval);
@@ -53,12 +53,12 @@ export function CyclingTile({
       onMouseLeave={() => setHovered(false)}
     >
       {/* The visible caption names the tile; the rotating photos are illustrative. */}
-      {photos.map((id, n) =>
+      {photos.map((photo, n) =>
         shouldRender(n) ? (
           <img
-            key={id}
-            src={img(id, 960)}
-            srcSet={srcSet(id)}
+            key={photo.src}
+            src={photo.src}
+            srcSet={photo.srcSet}
             sizes={sizes}
             alt=""
             loading="lazy"
