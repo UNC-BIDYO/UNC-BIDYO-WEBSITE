@@ -19,7 +19,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
+      # Images and video are stored in Git LFS (.gitattributes). Without lfs: true the
+      # runner gets pointer files, and vite-imagetools fails to decode them.
       - uses: actions/checkout@v7
+        with:
+          lfs: true
 
       # Versions match .mise.toml.
       - uses: pnpm/action-setup@v6
