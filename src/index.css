@@ -1,0 +1,28 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap');
+@import 'tailwindcss';
+
+@theme {
+  --font-sans: 'Inter Tight', ui-sans-serif, system-ui, sans-serif;
+  --color-paper: #ffffff;
+  --color-surface: #ffffff;
+  --color-ink: #0a0a0a;
+  --color-muted: #5c5c5c;
+  --color-line: #e4e4e4;
+  --color-accent: #7a1c2e;
+  --color-tint: #f6f0f1;
+  --color-accent-dark: #5a1321;
+  /* type scale */
+  --text-display: clamp(2.75rem, 9vw, 6.5rem);
+  --text-h2: clamp(2rem, 5vw, 3.25rem);
+  /* spacing scale: section rhythm */
+  --spacing-section: clamp(5rem, 12vw, 9rem);
+}
+
+@layer base {
+  html { scroll-behavior: smooth; }
+  body { background: var(--color-paper); color: var(--color-ink); font-family: var(--font-sans); -webkit-font-smoothing: antialiased; }
+  :focus-visible { outline: 2px solid var(--color-accent); outline-offset: 3px; }
+}
+
+.no-scrollbar { scrollbar-width: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; }
