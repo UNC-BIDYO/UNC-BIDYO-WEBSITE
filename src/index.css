@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap');
+/* Web font is loaded from index.html (<link>) so it starts downloading in parallel with this CSS. */
 @import 'tailwindcss';
 
 @theme {
@@ -19,9 +19,13 @@
 }
 
 @layer base {
-  html { scroll-behavior: smooth; }
+  @media (prefers-reduced-motion: no-preference) {
+    html { scroll-behavior: smooth; }
+  }
   body { background: var(--color-paper); color: var(--color-ink); font-family: var(--font-sans); -webkit-font-smoothing: antialiased; }
   :focus-visible { outline: 2px solid var(--color-accent); outline-offset: 3px; }
+  /* On dark/photo surfaces the burgundy ring disappears; switch to white. */
+  [data-surface='dark'] :focus-visible { outline-color: #fff; }
 }
 
 .no-scrollbar { scrollbar-width: none; }
