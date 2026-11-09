@@ -21,7 +21,7 @@
     "tailwindcss": "^4.3.4",
     "@tailwindcss/vite": "^4.3.4",
     "oxfmt": "^0.77.0",
-    "typescript": "^5.7.0",
+    "typescript": "^7.0.2",
     "vite": "^8.3.6"
   }
 }
