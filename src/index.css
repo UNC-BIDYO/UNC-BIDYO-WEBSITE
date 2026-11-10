@@ -2,20 +2,55 @@
 @import "tailwindcss";
 
 @theme {
-  --font-sans: "Inter Tight", ui-sans-serif, system-ui, sans-serif;
-  --color-paper: #ffffff;
+  /* type: cinematic condensed display, grotesk body, mono for slate-style labels.
+     Fallbacks are metric-similar so the swap after the web font loads is small. */
+  --font-display: "Anton", Impact, "Arial Narrow Bold", sans-serif;
+  --font-sans: "Archivo", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "Cascadia Mono", monospace;
+
+  /* color: all text pairs checked for WCAG AA (lowest text pair 6.3:1) */
+  --color-paper: #f6f6f4;
   --color-surface: #ffffff;
-  --color-ink: #0a0a0a;
-  --color-muted: #5c5c5c;
-  --color-line: #e4e4e4;
-  --color-accent: #7a1c2e;
-  --color-tint: #f6f0f1;
-  --color-accent-dark: #5a1321;
+  --color-ink: #0b0b0c;
+  --color-ink-2: #161618;
+  --color-muted: #55555a; /* on paper: 6.9:1 */
+  --color-muted-dark: #a1a1a6; /* on ink: 7.7:1 */
+  --color-line: #dcdcd8;
+  --color-line-strong: #8a8a8f; /* UI borders on paper: 3.2:1 */
+  --color-accent: #6c0204; /* logo red; on paper 11.8:1, white on it 12.7:1 */
+  --color-accent-dark: #4e0103; /* hover; white on it 15.8:1 */
+  --color-accent-bright: #ec6266; /* logo-red tint for dark surfaces: 6.1:1 on ink, 5.6:1 on ink-2 */
+
   /* type scale */
-  --text-display: clamp(2.75rem, 9vw, 6.5rem);
-  --text-h2: clamp(2rem, 5vw, 3.25rem);
+  --text-display: clamp(3.25rem, 11vw, 8.5rem);
+  --text-h2: clamp(2.5rem, 6.5vw, 4.75rem);
+
   /* spacing scale: section rhythm */
   --spacing-section: clamp(5rem, 12vw, 9rem);
+
+  /* one orchestrated page-load sequence (hero only), used via motion-safe:
+     `settle` moves without fading, for the h1: it is the page's LCP element, and
+     starting it at opacity 0 delays LCP until the fade ends. */
+  --animate-rise: rise 0.9s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  --animate-settle: settle 1s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  @keyframes settle {
+    from {
+      transform: translateY(18px);
+    }
+    to {
+      transform: none;
+    }
+  }
+  @keyframes rise {
+    from {
+      opacity: 0;
+      transform: translateY(24px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
 }
 
 @layer base {
