@@ -1,4 +1,4 @@
-export const BRAND = "UNC Bidyo";
+﻿export const BRAND = "UNC Bidyo";
 
 export const CONTACT_EMAIL = "uncbidyoorg@gmail.com";
 
@@ -10,3 +10,10 @@ export const mailto = (subject?: string) =>
     booking section shows the email address instead of the form. */
 export const FORM_ENDPOINT = "";
 
+/** Social profiles for the footer, in display order. Entries with an empty href are hidden. */
+export const SOCIAL_LINKS: { label: string; href: string }[] = [
+  { label: "Facebook", href: "" },
+  { label: "Instagram", href: "" },
+  { label: "TikTok", href: "" },
+  { label: "YouTube", href: "" },
+];
