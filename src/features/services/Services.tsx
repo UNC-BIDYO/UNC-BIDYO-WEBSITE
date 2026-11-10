@@ -1,4 +1,5 @@
 import { useState, type MouseEvent, type PointerEvent } from "react";
+import { useHydrated } from "@/shared/hooks/useHydrated";
 import { usePrefersReducedMotion } from "@/shared/hooks/usePrefersReducedMotion";
 import { cx } from "@/shared/lib/cx";
 import { mailto } from "@/shared/lib/site";
@@ -15,6 +16,7 @@ const EASE = "motion-safe:ease-[cubic-bezier(0.2,0.7,0.2,1)]";
 export function Services() {
   const [open, setOpen] = useState<number | null>(null);
   const reduced = usePrefersReducedMotion();
+  const hydrated = useHydrated();
 
   return (
     <section
@@ -43,6 +45,7 @@ export function Services() {
               open={open === n}
               dimmed={open !== null && open !== n}
               reduced={reduced}
+              hydrated={hydrated}
               onHover={() => setOpen(n)}
               onToggle={() => setOpen((o) => (o === n ? null : n))}
             />
@@ -59,6 +62,8 @@ type ServicePanelProps = {
   open: boolean;
   dimmed: boolean;
   reduced: boolean;
+  /** Before hydration the details are left un-inert, so they work without JavaScript. */
+  hydrated: boolean;
   onHover: () => void;
   onToggle: () => void;
 };
@@ -69,6 +74,7 @@ function ServicePanel({
   open,
   dimmed,
   reduced,
+  hydrated,
   onHover,
   onToggle,
 }: ServicePanelProps) {
@@ -166,7 +172,8 @@ function ServicePanel({
         {/* Collapsible details: grid rows animate 0fr → 1fr; `inert` keeps hidden links out of Tab order. */}
         <div
           id={detailsId}
-          inert={!open}
+          inert={hydrated && !open}
+          data-noscript-open
           className={cx(
             "grid motion-safe:transition-[grid-template-rows] motion-safe:duration-500",
             EASE,
@@ -178,6 +185,7 @@ function ServicePanel({
               {service.details.map((d, i) => (
                 <li
                   key={d}
+                  data-noscript-show
                   style={{ transitionDelay: open ? `${150 + i * 70}ms` : "0ms" }}
                   className={cx(
                     "flex gap-3 text-sm text-white",
@@ -192,6 +200,7 @@ function ServicePanel({
             </ul>
             <ButtonLink
               href={mailto(`Booking: ${service.title}`)}
+              data-noscript-show
               style={{ transitionDelay: open ? `${150 + service.details.length * 70}ms` : "0ms" }}
               className={cx(
                 "relative z-10 mt-6",

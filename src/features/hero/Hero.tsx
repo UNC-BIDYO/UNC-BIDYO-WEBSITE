@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useHydrated } from "@/shared/hooks/useHydrated";
 import { usePrefersReducedMotion } from "@/shared/hooks/usePrefersReducedMotion";
 import { mailto } from "@/shared/lib/site";
 import { Button, ButtonLink } from "@/shared/ui/Button";
@@ -11,6 +12,7 @@ type NavigatorWithConnection = Navigator & { connection?: { saveData?: boolean }
 export function Hero() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const reduced = usePrefersReducedMotion();
+  const hydrated = useHydrated();
   // null = follow the motion/data preferences; otherwise the visitor's explicit choice.
   const [choice, setChoice] = useState<"play" | "pause" | null>(null);
   const [saveData] = useState(
@@ -18,9 +20,11 @@ export function Hero() {
       typeof navigator !== "undefined" &&
       !!(navigator as NavigatorWithConnection).connection?.saveData,
   );
-  const playing = choice ? choice === "play" : !reduced && !saveData;
+  // Never "playing" in the prerendered HTML or during hydration: the real preferences are
+  // only known after, and starting early would download the video for reduced-motion users.
+  const playing = hydrated && (choice ? choice === "play" : !reduced && !saveData);
   // Only attach the 1.3 MB source once the video should actually play; until then the poster is enough.
-  const [loadVideo, setLoadVideo] = useState(playing);
+  const [loadVideo, setLoadVideo] = useState(false);
   if (playing && !loadVideo) setLoadVideo(true);
 
   useEffect(() => {
@@ -66,15 +70,14 @@ export function Hero() {
             Capturing the moments of every UNCean.
           </h1>
           <p className="mt-6 max-w-xl text-lg leading-relaxed text-white sm:text-xl motion-safe:animate-rise motion-safe:[animation-delay:260ms]">
-            Hire our team to cover your event, run a shoot, or produce a film. Edited and delivered
-            in 7 days.
+            [placeholder]
           </p>
           <div className="mt-9 flex flex-wrap items-center gap-x-6 gap-y-4 motion-safe:animate-rise motion-safe:[animation-delay:380ms]">
             <ButtonLink href={mailto("Event booking")} size="lg">
               Book your event <ArrowIcon />
             </ButtonLink>
             <span className="font-mono text-xs uppercase tracking-[0.16em] text-white">
-              Free quote within 24 hours
+              [placeholder]
             </span>
           </div>
         </div>
