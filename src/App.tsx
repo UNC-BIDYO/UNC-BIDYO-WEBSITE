@@ -1,4 +1,5 @@
 import { About } from "@/features/about/About";
+import { Booking } from "@/features/booking/Booking";
 import { Faq } from "@/features/faq/Faq";
 import { Hero } from "@/features/hero/Hero";
 import { Highlights } from "@/features/highlights/Highlights";
@@ -22,6 +23,7 @@ export default function App() {
         <About />
         <Team />
         <Faq />
+        <Booking />
       </main>
       <SiteFooter />
     </>

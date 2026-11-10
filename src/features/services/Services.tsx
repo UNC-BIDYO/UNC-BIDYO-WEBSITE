@@ -1,8 +1,8 @@
 import { useState, type MouseEvent, type PointerEvent } from "react";
+import { requestBooking } from "@/features/booking/bookingIntent";
 import { useHydrated } from "@/shared/hooks/useHydrated";
 import { usePrefersReducedMotion } from "@/shared/hooks/usePrefersReducedMotion";
 import { cx } from "@/shared/lib/cx";
-import { mailto } from "@/shared/lib/site";
 import { ButtonLink } from "@/shared/ui/Button";
 import { Container } from "@/shared/ui/Container";
 import { ArrowIcon } from "@/shared/ui/icons";
@@ -30,7 +30,7 @@ export function Services() {
           index="01"
           eyebrow="Services"
           title="What we do"
-          intro="Open a service to see what's included and book it."
+          intro="Open a service to see what's included, then book it below."
           tone="dark"
         />
         <ul
@@ -199,7 +199,8 @@ function ServicePanel({
               ))}
             </ul>
             <ButtonLink
-              href={mailto(`Booking: ${service.title}`)}
+              href="#book"
+              onClick={() => requestBooking(service.title)}
               data-noscript-show
               style={{ transitionDelay: open ? `${150 + service.details.length * 70}ms` : "0ms" }}
               className={cx(

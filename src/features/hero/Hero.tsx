@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useHydrated } from "@/shared/hooks/useHydrated";
 import { usePrefersReducedMotion } from "@/shared/hooks/usePrefersReducedMotion";
-import { mailto } from "@/shared/lib/site";
 import { Button, ButtonLink } from "@/shared/ui/Button";
 import { Container } from "@/shared/ui/Container";
 import { ArrowIcon, PlayPauseIcon } from "@/shared/ui/icons";
@@ -58,7 +57,7 @@ export function Hero() {
           <a href="/" className="-m-1 p-1">
             <Logo variant="white" className="h-9 sm:h-10" />
           </a>
-          <ButtonLink href={mailto("Quote request")} variant="outline-light" size="sm">
+          <ButtonLink href="#book" variant="outline-light" size="sm">
             Get a quote
           </ButtonLink>
         </nav>
@@ -73,7 +72,7 @@ export function Hero() {
             [placeholder]
           </p>
           <div className="mt-9 flex flex-wrap items-center gap-x-6 gap-y-4 motion-safe:animate-rise motion-safe:[animation-delay:380ms]">
-            <ButtonLink href={mailto("Event booking")} size="lg">
+            <ButtonLink href="#book" size="lg">
               Book your event <ArrowIcon />
             </ButtonLink>
             <span className="font-mono text-xs uppercase tracking-[0.16em] text-white">
