@@ -1,24 +1,27 @@
-import { useCallback, useRef, useState, type PointerEvent } from "react";
+import { useCallback, useRef, useState, type PointerEvent, type ReactNode } from "react";
 import { usePrefersReducedMotion } from "@/shared/hooks/usePrefersReducedMotion";
 import { cx } from "@/shared/lib/cx";
-import { img, srcSet } from "@/shared/lib/unsplash";
 import { Button } from "@/shared/ui/Button";
 import { Container } from "@/shared/ui/Container";
 import { ArrowIcon } from "@/shared/ui/icons";
 import { SectionHead } from "@/shared/ui/SectionHead";
-
-const members = [
-  { name: "Maya Chen", role: "Lead Photographer", photo: "1494790108377-be9c29b29330" },
-  { name: "Daniel Okafor", role: "Director of Video", photo: "1507003211169-0a1dd7228f2d" },
-  { name: "Elena Rossi", role: "Event Photographer", photo: "1607503873903-c5e95f80d7b9" },
-  { name: "Jonas Weber", role: "Cinematographer", photo: "1500648767791-00dcc994a43e" },
-  { name: "Priya Nair", role: "Video Editor", photo: "1609436132311-e4b0c9370469" },
-  { name: "Marco Silva", role: "Producer", photo: "1590086782957-93c06ef21604" },
-];
+import { MemberCard } from "./MemberCard";
+import { members } from "./members";
 
 export function Team() {
+  // Hidden until the officer list in members.ts has someone in it.
+  if (members.length === 0) return null;
+  return <TeamCarousel />;
+}
+
+function TeamCarousel() {
   const track = useRef<HTMLDivElement>(null);
-  const [active, setActive] = useState(0);
+  // `leftmost` is the first slide in view; arrows step from it. `atEnd` is true once the
+  // track can't scroll further: the last slides then share the view, so the indicator shows
+  // the final member while ← still steps back from the leftmost one.
+  const [leftmost, setLeftmost] = useState(0);
+  const [atEnd, setAtEnd] = useState(false);
+  const active = atEnd ? members.length - 1 : leftmost;
   const reduced = usePrefersReducedMotion();
 
   const onScroll = useCallback(() => {
@@ -34,8 +37,8 @@ export function Team() {
         best = n;
       }
     });
-    if (el.scrollLeft + el.clientWidth >= el.scrollWidth - 4) best = items.length - 1;
-    setActive(best);
+    setLeftmost(best);
+    setAtEnd(el.scrollLeft + el.clientWidth >= el.scrollWidth - 4);
   }, []);
 
   const goTo = (n: number) => {
@@ -84,22 +87,23 @@ export function Team() {
     goTo(target);
   };
 
-  const prevNext = (className: string) => (
-    <div className={cx("gap-3", className)}>
+  const prevNext = (className: string, middle?: ReactNode) => (
+    <div className={cx("items-center gap-3", className)}>
       <Button
         variant="outline"
         size="icon"
-        onClick={() => goTo(active - 1)}
-        disabled={active === 0}
+        onClick={() => goTo(leftmost - 1)}
+        disabled={leftmost === 0}
         aria-label="Previous member"
       >
         <ArrowIcon dir="left" />
       </Button>
+      {middle}
       <Button
         variant="outline"
         size="icon"
-        onClick={() => goTo(active + 1)}
-        disabled={active === members.length - 1}
+        onClick={() => goTo(leftmost + 1)}
+        disabled={atEnd}
         aria-label="Next member"
       >
         <ArrowIcon />
@@ -108,7 +112,9 @@ export function Team() {
   );
 
   return (
-    <section className="py-section" aria-roledescription="carousel" aria-label="Our team">
+    // No top padding: Highlights above shares this background, so its bottom padding already
+    // provides the one section gap (py on both would double it to ~18rem).
+    <section className="pb-section" aria-roledescription="carousel" aria-label="Our team">
       <Container>
         <div className="flex items-end justify-between gap-6">
           <SectionHead index="03" eyebrow="The team" title="The people behind the camera" />
@@ -127,40 +133,35 @@ export function Team() {
         >
           {members.map((m, n) => (
             <div
-              key={m.name}
+              key={m.photo}
               role="group"
               aria-roledescription="slide"
               aria-label={`${m.name}, ${n + 1} of ${members.length}`}
               className="w-[72%] shrink-0 snap-start sm:w-[44%] md:w-[calc((100%-2rem)/3)] lg:w-[calc((100%-3rem)/4)]"
             >
-              <div className="aspect-[4/5] overflow-hidden bg-line">
-                <img
-                  src={img(m.photo, 640)}
-                  srcSet={srcSet(m.photo)}
-                  sizes="(min-width: 1024px) 270px, (min-width: 768px) 33vw, (min-width: 640px) 44vw, 72vw"
-                  alt={`Portrait of ${m.name}`}
-                  loading="lazy"
-                  decoding="async"
-                  draggable={false}
-                  className="h-full w-full object-cover grayscale-[35%] motion-safe:transition-[filter] motion-safe:duration-500 hover:grayscale-0"
-                />
-              </div>
-              <p className="mt-4 font-mono text-xs uppercase tracking-[0.16em] text-muted">
-                {String(n + 1).padStart(2, "0")} — {m.role}
-              </p>
-              <h3 className="mt-1 font-display text-3xl uppercase leading-none">{m.name}</h3>
+              <MemberCard member={m} index={n} current={n === active} />
             </div>
           ))}
         </div>
-        {prevNext("mt-10 flex justify-center md:hidden")}
+        {/* Phones: arrows with a "03 / 16" counter (a row of 16 dashes would overflow). */}
+        {prevNext(
+          "mt-10 flex justify-center md:hidden",
+          <span
+            aria-hidden
+            className="min-w-20 text-center font-mono text-xs tabular-nums tracking-[0.16em] text-muted"
+          >
+            {String(active + 1).padStart(2, "0")} / {String(members.length).padStart(2, "0")}
+          </span>,
+        )}
+        {/* Wider screens: one dash per member. */}
         <div
-          className="mt-6 flex justify-center gap-1 md:mt-10"
+          className="mt-10 hidden justify-center gap-1 md:flex"
           role="group"
           aria-label="Choose member"
         >
           {members.map((m, n) => (
             <button
-              key={m.name}
+              key={m.photo}
               type="button"
               onClick={() => goTo(n)}
               aria-label={`Go to ${m.name}`}

@@ -1,12 +1,18 @@
 import { useState } from "react";
 import { usePrefersReducedMotion } from "@/shared/hooks/usePrefersReducedMotion";
-import { SIZES } from "@/shared/lib/unsplash";
 import { Button } from "@/shared/ui/Button";
 import { Container } from "@/shared/ui/Container";
 import { PlayPauseIcon } from "@/shared/ui/icons";
 import { SectionHead } from "@/shared/ui/SectionHead";
 import { CyclingTile } from "./CyclingTile";
 import { photosFor } from "./photos";
+
+/* Tile widths for the `sizes` hint: full width on phones; on md+ the grid is 6 columns
+   inside a max-w-6xl (1152px) container. */
+const SIZES = {
+  twoThirds: "(min-width: 1152px) 720px, (min-width: 768px) 64vw, 100vw",
+  third: "(min-width: 1152px) 360px, (min-width: 768px) 32vw, 100vw",
+} as const;
 
 /* Photos come from ./photos/<folder>/ (see ./photos/README.md). */
 const tiles = [
