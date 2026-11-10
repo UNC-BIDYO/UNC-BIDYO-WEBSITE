@@ -1,4 +1,4 @@
-import { BRAND, CONTACT_EMAIL, mailto } from "@/shared/lib/site";
+import { CONTACT_EMAIL, mailto } from "@/shared/lib/site";
 import { Container } from "@/shared/ui/Container";
 import { Logo } from "@/shared/ui/Logo";
 
@@ -8,9 +8,7 @@ export function SiteFooter() {
       <Container className="flex flex-col gap-8 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <Logo variant="white" className="h-12" />
-          <p className="mt-3 text-sm text-muted-dark">
-            © {BRAND}. Event photography &amp; videography.
-          </p>
+          <p className="mt-3 text-sm text-muted-dark">Capturing the moments of every UNCean.</p>
         </div>
         <a
           href={mailto()}

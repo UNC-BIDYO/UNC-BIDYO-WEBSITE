@@ -1,4 +1,6 @@
-export type Photo = { src: string; srcSet: string };
+import { groupByFolder, type Photo } from "@/shared/lib/photoFolders";
+
+export type { Photo };
 
 /* Every image in ./photos/<tile>/ is resized at build time by vite-imagetools
    into five WebP widths (the srcset) plus a 960px version (the src).
@@ -14,16 +16,7 @@ const srcs = import.meta.glob<string>("./photos/*/*.{jpg,jpeg,png,webp,avif,JPG,
   eager: true,
 });
 
-// Group by folder, ordered by file name ("1-…", "2-…", "10-…": natural number order).
-const byFolder = new Map<string, Photo[]>();
-for (const file of Object.keys(srcs).sort((a, b) =>
-  a.localeCompare(b, undefined, { numeric: true }),
-)) {
-  const folder = file.split("/")[2];
-  const list = byFolder.get(folder) ?? [];
-  list.push({ src: srcs[file], srcSet: srcSets[file] });
-  byFolder.set(folder, list);
-}
+const byFolder = groupByFolder(srcs, srcSets);
 
 /** The photos in ./photos/<folder>/, in file-name order (empty if the folder has none). */
 export function photosFor(folder: string): Photo[] {
