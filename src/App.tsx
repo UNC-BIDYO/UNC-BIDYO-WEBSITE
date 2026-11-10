@@ -1,3 +1,4 @@
+import { About } from "@/features/about/About";
 import { Hero } from "@/features/hero/Hero";
 import { Highlights } from "@/features/highlights/Highlights";
 import { Services } from "@/features/services/Services";
@@ -17,6 +18,7 @@ export default function App() {
       <main id="main" tabIndex={-1} className="outline-none">
         <Services />
         <Highlights />
+        <About />
         <Team />
       </main>
       <SiteFooter />
