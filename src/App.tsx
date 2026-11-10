@@ -1,4 +1,5 @@
 import { About } from "@/features/about/About";
+import { Faq } from "@/features/faq/Faq";
 import { Hero } from "@/features/hero/Hero";
 import { Highlights } from "@/features/highlights/Highlights";
 import { Services } from "@/features/services/Services";
@@ -20,6 +21,7 @@ export default function App() {
         <Highlights />
         <About />
         <Team />
+        <Faq />
       </main>
       <SiteFooter />
     </>
