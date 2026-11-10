@@ -2,12 +2,13 @@
 //
 //   1. Client build        -> dist/ (the normal `vite build`)
 //   2. Server build        -> node_modules/.cache/prerender/entry-server.js
-//   3. Prerender           -> renders <App /> and writes it into dist/index.html's #root
+//   3. Prerender           -> renders <App /> into dist/index.html's #root and preloads
+//                             the headline font
 //
 // One script instead of `vite build && ...` because Figma Make's preview deploy runs
 // `pnpm run build --mode development`, and pnpm appends that flag to the end of the
 // command; here it is passed to both Vite builds.
-import { existsSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { build } from "vite";
@@ -54,7 +55,20 @@ const emptyRoot = '<div id="root"></div>';
 if (!template.includes(emptyRoot)) {
   throw new Error(`prerender: ${emptyRoot} not found in dist/index.html`);
 }
-writeFileSync(indexPath, template.replace(emptyRoot, () => `<div id="root">${appHtml}</div>`));
+// Preload the headline font (the hero <h1> is the LCP element), so it usually arrives before
+// first paint instead of swapping in later. Its file name carries a content hash, so find it.
+const antonFile = readdirSync(resolve(outDir, "assets")).find((f) =>
+  /^anton-latin-400-normal-[\w-]+\.woff2$/.test(f),
+);
+if (!antonFile) throw new Error("prerender: bundled Anton .woff2 not found in dist/assets/");
+const fontPreload = `<link rel="preload" href="${base}assets/${antonFile}" as="font" type="font/woff2" crossorigin>`;
+
+writeFileSync(
+  indexPath,
+  template
+    .replace(emptyRoot, () => `<div id="root">${appHtml}</div>`)
+    .replace("</head>", () => `  ${fontPreload}\n  </head>`),
+);
 
 // Every local file the prerendered HTML points at must exist in dist/.
 const urls = [...appHtml.matchAll(/\b(?:src|srcSet|srcset|poster|href)="([^"]+)"/g)]
