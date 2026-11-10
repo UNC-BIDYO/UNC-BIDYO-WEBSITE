@@ -18,6 +18,19 @@ export default defineConfig(({ mode }) => {
     build: {
       sourcemap: emitSourcemaps ? 'inline' : false,
       minify: !emitSourcemaps,
+      rolldownOptions: {
+        output: {
+          // Images are named by content hash only. Identical images imported under two names
+          // (e.g. a photo used in Highlights and Services) are written once, named after
+          // whichever import the bundler reaches first; that order differs between the client
+          // and prerender builds, so name-based files broke the prerendered HTML. Hash-only names
+          // are the same in both builds, and keep photo file names out of public URLs.
+          assetFileNames: (asset: { names?: string[] }) =>
+            /\.(webp|avif|png|jpe?g|gif|svg)$/i.test(asset.names?.[0] ?? '')
+              ? 'assets/[hash][extname]'
+              : 'assets/[name]-[hash][extname]',
+        },
+      },
     },
     plugins: [
 react(),
