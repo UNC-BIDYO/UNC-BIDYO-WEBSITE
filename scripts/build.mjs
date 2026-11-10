@@ -8,7 +8,7 @@
 // One script instead of `vite build && ...` because Figma Make's preview deploy runs
 // `pnpm run build --mode development`, and pnpm appends that flag to the end of the
 // command; here it is passed to both Vite builds.
-import { existsSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { build } from "vite";
@@ -30,6 +30,22 @@ const base = process.env.FIGMA_PUBLIC_URL ? `${process.env.FIGMA_PUBLIC_URL}/` :
 
 // 1. Client
 await build({ mode });
+
+// Images and video are stored in Git LFS (.gitattributes). A checkout without LFS gets ~130-byte
+// text "pointer" files instead; photos then fail in vite-imagetools, but files that are only
+// copied (public/hero.mp4, the poster, the logos) would ship broken. Fail loudly instead.
+const LFS_POINTER = "version https://git-lfs.github.com/spec/v1";
+const pointers = readdirSync(outDir, { recursive: true, withFileTypes: true })
+  .filter((e) => e.isFile())
+  .map((e) => resolve(e.parentPath, e.name))
+  .filter((file) => statSync(file).size < 1024 && readFileSync(file, "utf8").startsWith(LFS_POINTER));
+if (pointers.length) {
+  throw new Error(
+    "build: these files are Git LFS pointers, not real files. Fetch LFS content first " +
+      "(`git lfs pull`, or `lfs: true` in actions/checkout):\n  " +
+      pointers.map((f) => f.slice(outDir.length + 1)).join("\n  "),
+  );
+}
 
 // 2. Server bundle of the same app (same config and plugins, so asset URLs match the client's)
 await build({
