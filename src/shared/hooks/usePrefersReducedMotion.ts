@@ -1,18 +1,23 @@
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 
 const QUERY = "(prefers-reduced-motion: reduce)";
 
+const subscribe = (onChange: () => void) => {
+  const m = window.matchMedia(QUERY);
+  m.addEventListener("change", onChange);
+  return () => m.removeEventListener("change", onChange);
+};
+
+/**
+ * Whether the visitor asked for reduced motion. The prerendered HTML (and hydration)
+ * assume false, then React re-renders with the real value straight after hydrating.
+ * Anything that must not start before that (e.g. the hero video) should also check
+ * useHydrated().
+ */
 export function usePrefersReducedMotion() {
-  // Read synchronously so the first render already knows (avoids starting the video, then stopping it).
-  const [reduced, setReduced] = useState(
-    () => typeof window !== "undefined" && window.matchMedia(QUERY).matches,
+  return useSyncExternalStore(
+    subscribe,
+    () => window.matchMedia(QUERY).matches,
+    () => false,
   );
-  useEffect(() => {
-    const m = window.matchMedia(QUERY);
-    setReduced(m.matches);
-    const onChange = () => setReduced(m.matches);
-    m.addEventListener("change", onChange);
-    return () => m.removeEventListener("change", onChange);
-  }, []);
-  return reduced;
 }
