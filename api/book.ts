@@ -26,8 +26,9 @@ export const BOOKING_RULES = {
     venue: 200,
     requests: 2000,
   },
-  /** Philippine mobile: 09XX XXX XXXX or +63 9XX XXX XXXX, spaces/dashes allowed. */
-  mobilePattern: "(\\+63|0)[\\s-]?9\\d{2}[\\s-]?\\d{3}[\\s-]?\\d{4}",
+  /** Philippine mobile: 09XX XXX XXXX or +63 9XX XXX XXXX, spaces/dashes allowed. Also used as
+      the input's HTML `pattern`, which browsers compile with the `v` flag, so `-` is escaped. */
+  mobilePattern: "(\\+63|0)[\\s\\-]?9\\d{2}[\\s\\-]?\\d{3}[\\s\\-]?\\d{4}",
   shooters: { min: 1, max: 10 },
   /** Vercel rejects requests over 4.5 MB, so the letter stays under that with the other fields. */
   letterMaxBytes: 4 * 1024 * 1024,
@@ -74,24 +75,24 @@ export function validate(
 ): { fields: Fields; letter: Letter | null; errors: Errors } | { errors: Errors } {
   const errors: Errors = {};
   const max = BOOKING_RULES.maxLength;
-  const required = (key: keyof typeof max, label: string) => {
+  const required = (key: keyof typeof max, missing: string) => {
     const v = text(form, key);
-    if (!v) errors[key] = `Enter ${label}.`;
+    if (!v) errors[key] = missing;
     else if (v.length > max[key]) errors[key] = `Keep this under ${max[key]} characters.`;
     return v;
   };
 
-  const name = required("name", "your name");
-  const email = required("email", "your email address");
+  const name = required("name", "Enter your name.");
+  const email = required("email", "Enter your email address.");
   if (email && !errors.email && !EMAIL.test(email)) errors.email = "Enter a valid email address.";
-  const mobile = required("mobile", "a mobile number");
+  const mobile = required("mobile", "Enter a mobile number.");
   if (mobile && !errors.mobile && !new RegExp(`^${BOOKING_RULES.mobilePattern}$`).test(mobile)) {
     errors.mobile = "Enter a Philippine mobile number, like 0917 123 4567.";
   }
-  const organization = required("organization", "your organization");
-  const event_title = required("event_title", "the activity or event title");
-  const service = required("service", "a service");
-  const venue = required("venue", "the event place");
+  const organization = required("organization", "Enter your organization.");
+  const event_title = required("event_title", "Enter the activity or event title.");
+  const service = required("service", "Choose a service.");
+  const venue = required("venue", "Enter the event place.");
 
   const today = todayInManila();
   const start_date = text(form, "start_date");
