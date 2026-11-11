@@ -12,8 +12,5 @@ export const FORM_ENDPOINT = "";
 
 /** Social profiles for the footer, in display order. Entries with an empty href are hidden. */
 export const SOCIAL_LINKS: { label: string; href: string }[] = [
-  { label: "Facebook", href: "" },
-  { label: "Instagram", href: "" },
-  { label: "TikTok", href: "" },
-  { label: "YouTube", href: "" },
+  { label: "Facebook", href: "https://www.facebook.com/UNCBidyo" },
 ];
