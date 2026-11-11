@@ -114,10 +114,10 @@ function TeamCarousel() {
   return (
     // No top padding: Highlights above shares this background, so its bottom padding already
     // provides the one section gap (py on both would double it to ~18rem).
-    <section className="pb-section" aria-roledescription="carousel" aria-label="Our team">
+    <section className="py-section" aria-roledescription="carousel" aria-label="Our team">
       <Container>
         <div className="flex items-end justify-between gap-6">
-          <SectionHead index="03" eyebrow="The team" title="The people behind the camera" />
+          <SectionHead index="04" eyebrow="The team" title="The people behind the camera" />
           {prevNext("hidden md:flex")}
         </div>
         <div
