@@ -1,6 +1,9 @@
 {
   "title": "UNC Bidyo — Event Photography & Video",
-  "description": "Explore event photography and video services, browse rotating portfolio highlights, and meet the creative team behind memorable celebrations and productions.",
+  "description": "Event coverage, photoshoots and video production by UNC Bidyo, capturing the moments of every UNCean.",
+  "openGraph": {
+    "image": "https://uncbidyo.org/og.jpg"
+  },
   "robots": {
     "index": false
   },
