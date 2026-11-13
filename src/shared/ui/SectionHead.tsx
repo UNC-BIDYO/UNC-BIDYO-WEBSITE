@@ -6,9 +6,13 @@ type SectionHeadProps = {
   eyebrow: string;
   title: string;
   intro?: string;
-  tone?: "light" | "dark";
+  /** Surface the heading sits on: paper, ink, or the burgundy accent. */
+  tone?: "light" | "dark" | "accent";
   id?: string;
 };
+
+const eyebrowTone = { light: "text-accent", dark: "text-accent-bright", accent: "text-white" };
+const introTone = { light: "text-muted", dark: "text-muted-dark", accent: "text-white/85" };
 
 export function SectionHead({
   index,
@@ -18,13 +22,12 @@ export function SectionHead({
   tone = "light",
   id,
 }: SectionHeadProps) {
-  const dark = tone === "dark";
   return (
     <div className="max-w-3xl">
       <p
         className={cx(
           "font-mono text-xs font-medium uppercase tracking-[0.2em]",
-          dark ? "text-accent-bright" : "text-accent",
+          eyebrowTone[tone],
         )}
       >
         <span aria-hidden>{index} / </span>
@@ -34,14 +37,7 @@ export function SectionHead({
         {title}
       </h2>
       {intro && (
-        <p
-          className={cx(
-            "mt-5 max-w-xl text-lg leading-relaxed",
-            dark ? "text-muted-dark" : "text-muted",
-          )}
-        >
-          {intro}
-        </p>
+        <p className={cx("mt-5 max-w-xl text-lg leading-relaxed", introTone[tone])}>{intro}</p>
       )}
     </div>
   );
