@@ -233,7 +233,14 @@ export async function POST(request: Request): Promise<Response> {
   const url = env("SUPABASE_URL").replace(/\/+$/, "");
   const key = env("SUPABASE_SERVICE_ROLE_KEY");
   if (!url || !key) {
-    console.error("book: SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY is not set");
+    // Says which variable is the problem and whether it is absent or empty; never logs values.
+    const state = (name: string) =>
+      !(name in process.env) ? "missing" : env(name) ? "set" : "present but empty";
+    console.error(
+      `book: Supabase settings unavailable (VERCEL_ENV=${process.env.VERCEL_ENV ?? "?"}): ` +
+        `SUPABASE_URL ${state("SUPABASE_URL")}, SUPABASE_SERVICE_ROLE_KEY ${state("SUPABASE_SERVICE_ROLE_KEY")}. ` +
+        `Check Vercel → Settings → Environment Variables for this environment, then redeploy.`,
+    );
     return reply(503, {
       ok: false,
       message: "Booking is temporarily unavailable. Please email uncbidyoorg@gmail.com.",
