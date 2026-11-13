@@ -162,22 +162,33 @@ function BookingForm() {
         className="hidden"
       />
 
-      <TextField
-        tone={tone}
-        label="Name"
-        name="name"
-        autoComplete="name"
-        maxLength={BOOKING_RULES.maxLength.name}
-        error={errors.name}
-      />
-      <TextField
-        tone={tone}
-        label="Organization"
-        name="organization"
-        autoComplete="organization"
-        maxLength={BOOKING_RULES.maxLength.organization}
-        error={errors.organization}
-      />
+      <div className="grid gap-x-6 gap-y-7 sm:col-span-2 sm:grid-cols-3">
+        <TextField
+          tone={tone}
+          label="First name"
+          name="first_name"
+          autoComplete="given-name"
+          maxLength={BOOKING_RULES.maxLength.first_name}
+          error={errors.first_name}
+        />
+        <TextField
+          tone={tone}
+          label="Middle name"
+          name="middle_name"
+          autoComplete="additional-name"
+          optional
+          maxLength={BOOKING_RULES.maxLength.middle_name}
+          error={errors.middle_name}
+        />
+        <TextField
+          tone={tone}
+          label="Last name"
+          name="last_name"
+          autoComplete="family-name"
+          maxLength={BOOKING_RULES.maxLength.last_name}
+          error={errors.last_name}
+        />
+      </div>
       <TextField
         tone={tone}
         label="Email"
@@ -200,6 +211,14 @@ function BookingForm() {
         title="A Philippine mobile number, like 0917 123 4567"
         maxLength={BOOKING_RULES.maxLength.mobile}
         error={errors.mobile}
+      />
+      <TextField
+        tone={tone}
+        label="Organization"
+        name="organization"
+        autoComplete="organization"
+        maxLength={BOOKING_RULES.maxLength.organization}
+        error={errors.organization}
       />
       <TextField
         tone={tone}
@@ -226,6 +245,17 @@ function BookingForm() {
         ))}
         <option value="Other">Other / not sure</option>
       </SelectField>
+      <TextField
+        tone={tone}
+        label="Number of shooters"
+        name="shooters"
+        type="number"
+        inputMode="numeric"
+        min={BOOKING_RULES.shooters.min}
+        max={BOOKING_RULES.shooters.max}
+        step={1}
+        error={errors.shooters}
+      />
 
       {/* The last-day field is shown by CSS when the box is ticked, so it works without
           JavaScript too; with JavaScript it also becomes required and can't precede day 2. */}
@@ -267,18 +297,8 @@ function BookingForm() {
         label="Event place"
         name="venue"
         maxLength={BOOKING_RULES.maxLength.venue}
+        className="sm:col-span-2"
         error={errors.venue}
-      />
-      <TextField
-        tone={tone}
-        label="Number of shooters"
-        name="shooters"
-        type="number"
-        inputMode="numeric"
-        min={BOOKING_RULES.shooters.min}
-        max={BOOKING_RULES.shooters.max}
-        step={1}
-        error={errors.shooters}
       />
       <TextAreaField
         tone={tone}

@@ -17,7 +17,9 @@
 
 export const BOOKING_RULES = {
   maxLength: {
-    name: 100,
+    first_name: 60,
+    middle_name: 60,
+    last_name: 60,
     email: 254,
     mobile: 20,
     organization: 150,
@@ -43,7 +45,9 @@ export const BOOKING_RULES = {
 } as const;
 
 type Fields = {
-  name: string;
+  first_name: string;
+  middle_name: string | null;
+  last_name: string;
   email: string;
   mobile: string;
   organization: string;
@@ -82,7 +86,12 @@ export function validate(
     return v;
   };
 
-  const name = required("name", "Enter your name.");
+  const first_name = required("first_name", "Enter your first name.");
+  const middle_name = text(form, "middle_name");
+  if (middle_name.length > max.middle_name) {
+    errors.middle_name = `Keep this under ${max.middle_name} characters.`;
+  }
+  const last_name = required("last_name", "Enter your last name.");
   const email = required("email", "Enter your email address.");
   if (email && !errors.email && !EMAIL.test(email)) errors.email = "Enter a valid email address.";
   const mobile = required("mobile", "Enter a mobile number.");
@@ -134,7 +143,9 @@ export function validate(
   if (Object.keys(errors).length) return { errors };
   return {
     fields: {
-      name,
+      first_name,
+      middle_name: middle_name || null,
+      last_name,
       email,
       mobile,
       organization,
@@ -169,13 +180,16 @@ function bytesToBase64(bytes: ArrayBuffer) {
   return Buffer.from(bytes).toString("base64");
 }
 
+const fullName = (f: Fields) =>
+  [f.first_name, f.middle_name, f.last_name].filter(Boolean).join(" ");
+
 const formatDates = (f: Fields) => (f.end_date ? `${f.start_date} to ${f.end_date}` : f.start_date);
 
 function emailBody(f: Fields, letterName: string | null) {
   return [
     `New booking request from the website`,
     ``,
-    `Name:          ${f.name}`,
+    `Name:          ${fullName(f)}`,
     `Email:         ${f.email}`,
     `Mobile:        ${f.mobile}`,
     `Organization:  ${f.organization}`,
@@ -189,7 +203,7 @@ function emailBody(f: Fields, letterName: string | null) {
     `Additional requests:`,
     f.requests ?? "(none)",
     ``,
-    `Reply to this email to answer ${f.name} directly. The booking is also saved in Supabase (table "bookings").`,
+    `Reply to this email to answer ${f.first_name} directly. The booking is also saved in Supabase (table "bookings").`,
   ].join("\n");
 }
 

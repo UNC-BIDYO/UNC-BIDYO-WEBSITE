@@ -5,7 +5,9 @@ create table if not exists public.bookings (
   created_at    timestamptz not null default now(),
   status        text not null default 'new'
                 check (status in ('new', 'confirmed', 'declined', 'done')),
-  name          text not null,
+  first_name    text not null,
+  middle_name   text,
+  last_name     text not null,
   email         text not null,
   mobile        text not null,
   organization  text not null,
