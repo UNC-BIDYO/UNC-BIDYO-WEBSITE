@@ -74,6 +74,11 @@ export function SettingsPage() {
             <AlertDescription>
               <ul className="list-disc pl-4">
                 <li>When on, booked days also can't be picked in the website's date picker.</li>
+                <li>
+                  New requests are checked right away; the date picker catches up within about 15
+                  minutes.
+                </li>
+                <li>Any event in the calendar counts, except ones marked &ldquo;Free&rdquo;.</li>
                 <li>When off, every request comes in as pending for you to review.</li>
                 <li>
                   If Google Calendar can't be checked, the request stays pending and is flagged.

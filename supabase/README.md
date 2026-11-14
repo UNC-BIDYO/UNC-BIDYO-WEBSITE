@@ -85,3 +85,12 @@ In the repo, open **Settings → Secrets and variables → Actions → New repos
 5. Open `https://<your site>/admin` and sign in.
 
 Only accounts listed in `ADMIN_EMAILS` can open the panel, even if other users exist in Supabase.
+
+### Automatic overlap check
+
+In the admin panel, **Settings → Automatically decline clashing bookings** controls it:
+
+- **On:** each new request is checked against Bidyo's Google Calendar before it's saved. If any requested day already has an event, the request is saved as **declined** (shown with an **Auto** badge). The requester sees *"That date is already booked"* on the form and gets the **Date unavailable** email, and Bidyo gets an **Auto-declined** copy. Booked days also can't be picked in the website's date picker. That part can take up to 15 minutes to update, because the schedule is cached; the check on submit applies immediately.
+- **What counts as busy:** any event on the calendar that day, including approved bookings and events added by hand. Events marked **Free** in Google Calendar don't count. Days are matched whole, since the form has no times.
+- **If Google can't be checked:** the request is never declined. It's saved as pending with a **Check date** badge, so an admin can look at it.
+- **Off:** every request comes in as pending.

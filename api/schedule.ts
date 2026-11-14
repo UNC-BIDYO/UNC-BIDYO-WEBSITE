@@ -11,6 +11,19 @@
  */
 import { todayInManila } from "./_lib/booking.js";
 import { addDays, busyDays, googleConfig, listEvents, manilaMidnight } from "./_lib/google.js";
+import { getSetting, supabaseConfig } from "./_lib/supabase.js";
+
+/** The admin overlap-check switch: when on, the date picker disables booked days. */
+async function blockBookedSetting(): Promise<boolean> {
+  const db = supabaseConfig("schedule");
+  if (!db) return false;
+  try {
+    return (await getSetting(db, "overlap_check", false)) === true;
+  } catch (e) {
+    console.error("schedule: reading overlap_check failed:", (e as Error).message);
+    return false;
+  }
+}
 
 /** How far ahead the schedule looks. */
 const DAYS_AHEAD = 183;
@@ -25,11 +38,13 @@ export async function GET(): Promise<Response> {
   const from = todayInManila();
   const to = addDays(from, DAYS_AHEAD);
   try {
-    const events = await listEvents(google, manilaMidnight(from), manilaMidnight(addDays(to, 1)));
+    const [events, blockBooked] = await Promise.all([
+      listEvents(google, manilaMidnight(from), manilaMidnight(addDays(to, 1))),
+      blockBookedSetting(),
+    ]);
     const booked = busyDays(events).filter((d) => d >= from && d <= to);
     return Response.json(
-      // blockBooked becomes the admin's overlap-check setting (Phase 5).
-      { booked, from, to, blockBooked: false },
+      { booked, from, to, blockBooked },
       { headers: { "Cache-Control": "public, s-maxage=900, stale-while-revalidate=3600" } },
     );
   } catch (e) {

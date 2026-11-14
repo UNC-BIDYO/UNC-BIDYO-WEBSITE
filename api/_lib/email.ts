@@ -9,7 +9,13 @@ import { env, siteUrl } from "./env.js";
 const CONTACT_EMAIL = "uncbidyoorg@gmail.com";
 const FACEBOOK_URL = "https://www.facebook.com/UNCBidyo";
 
-export type EmailKind = "received" | "received-copy" | "approved" | "declined" | "unavailable";
+export type EmailKind =
+  | "received"
+  | "received-copy"
+  | "approved"
+  | "declined"
+  | "unavailable"
+  | "auto-declined-copy";
 
 export type RenderedEmail = { subject: string; html: string; text: string };
 
@@ -110,6 +116,23 @@ function variant(kind: EmailKind, b: Booking): Variant {
           "Questions about this decision? Contact us at the address below.",
         ],
         footer: ONE_WAY,
+      };
+    case "auto-declined-copy":
+      return {
+        subject: `Auto-declined: ${event} (${formatDates(b)})`,
+        title: "Booking Declined Automatically",
+        greeting: "Hi Bidyo team,",
+        intro: [
+          `${fullName(b)} asked for ${formatDates(b)}, which clashes with an event in Bidyo's Google Calendar. The request was declined automatically, and they were emailed to pick another date.`,
+        ],
+        pill: PILLS.unavailable,
+        detailsHeading: "Request details:",
+        showContact: true,
+        bullets: [
+          "Reply to this email to reach them directly, for example if you can still cover it.",
+          "To review clashes yourself instead, turn off the automatic check in the admin panel (Settings).",
+        ],
+        footer: `Sent by the booking form on ${site.replace(/^https?:\/\//, "")}.`,
       };
     case "unavailable":
       return {

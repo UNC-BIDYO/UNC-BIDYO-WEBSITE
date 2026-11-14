@@ -25,7 +25,7 @@ import { useRequestedService } from "./bookingIntent";
 /** Vercel function in api/book.ts: saves to Supabase and emails Bidyo. */
 const BOOKING_ENDPOINT = "/api/book";
 
-type Status = "idle" | "sending" | "sent" | "error";
+type Status = "idle" | "sending" | "sent" | "unavailable" | "error";
 type Errors = Record<string, string>;
 
 const LETTER_ACCEPT = Object.keys(BOOKING_RULES.letterTypes)
@@ -103,7 +103,9 @@ function BookingForm() {
   const blockBooked = schedule.status === "ready" && schedule.blockBooked;
 
   useEffect(() => {
-    if (status === "sent" || status === "error") statusRef.current?.focus();
+    if (status === "sent" || status === "unavailable" || status === "error") {
+      statusRef.current?.focus();
+    }
   }, [status]);
 
   const fail = (msg: string, fieldErrors: Errors = {}) => {
@@ -152,9 +154,17 @@ function BookingForm() {
       });
       const body = (await res.json().catch(() => null)) as {
         ok?: boolean;
+        outcome?: "received" | "unavailable";
         errors?: Errors;
         message?: string;
       } | null;
+      // Declined automatically: the date clashes with Bidyo's calendar. Keep their details so
+      // they only need to pick another date.
+      if (res.ok && body?.ok && body.outcome === "unavailable") {
+        setDates({});
+        setStatus("unavailable");
+        return;
+      }
       if (res.ok && body?.ok) {
         form.reset();
         setService("");
@@ -391,6 +401,15 @@ function BookingForm() {
         </Button>
         <p ref={statusRef} tabIndex={-1} role="status" className="outline-none">
           {status === "sent" && "Thanks! We got your request and will reply by email."}
+          {status === "unavailable" && (
+            <span className="text-accent-bright">
+              That date is already booked.{" "}
+              <a href="#schedule" className="underline underline-offset-4">
+                Check our schedule
+              </a>{" "}
+              and pick another day. Your other details are still filled in.
+            </span>
+          )}
           {status === "error" && (
             <span className="text-accent-bright">
               {message} Try again, or email{" "}
