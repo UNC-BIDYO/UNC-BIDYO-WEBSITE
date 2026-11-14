@@ -24,18 +24,20 @@ jobs:
     steps:
       # Images and video are stored in Git LFS (.gitattributes). Without lfs: true the
       # runner gets pointer files, and vite-imagetools fails to decode them.
-      - uses: actions/checkout@v7
+      # Actions are pinned to full commit SHAs (a tag can be moved to other code); Dependabot
+      # updates the SHA and the version comment together.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           lfs: true
           # Full history lets SonarCloud tell new code from old.
           fetch-depth: 0
 
       # Versions match .mise.toml.
-      - uses: pnpm/action-setup@v6
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
         with:
           version: 10.34.3
 
-      - uses: actions/setup-node@v7
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 22
           cache: pnpm
@@ -68,6 +70,6 @@ jobs:
       # Code quality and coverage (sonar-project.properties). Runs once SONAR_TOKEN is set.
       - name: SonarCloud scan
         if: env.SONAR_TOKEN != ''
-        uses: SonarSource/sonarqube-scan-action@v5
+        uses: SonarSource/sonarqube-scan-action@59202af334b4ba7b5db01b701b8e79f8b3bef0f4 # v8.5.0
         env:
           SONAR_HOST_URL: https://sonarcloud.io
