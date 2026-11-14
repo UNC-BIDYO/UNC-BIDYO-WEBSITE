@@ -39,7 +39,11 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Type-check
-        run: pnpm exec tsc --noEmit -p .
+        run: pnpm typecheck
+
+      # API, email, Google Calendar, admin and overlap-check tests (tests/), external services stubbed.
+      - name: Test
+        run: pnpm test:coverage
 
       # Only src/ is checked: the root config files are generated and managed by Figma Make.
       - name: Check formatting
