@@ -1,14 +1,31 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
+import { BOOKING_RULES } from "../../../api/book";
 import { services } from "@/features/services/serviceList";
-import { CONTACT_EMAIL, FORM_ENDPOINT, mailto } from "@/shared/lib/site";
-import { Button, ButtonLink } from "@/shared/ui/Button";
+import { useHydrated } from "@/shared/hooks/useHydrated";
+import { CONTACT_EMAIL, mailto } from "@/shared/lib/site";
+import { Button } from "@/shared/ui/Button";
 import { Container } from "@/shared/ui/Container";
 import { ArrowIcon } from "@/shared/ui/icons";
-import { SelectField, TextAreaField, TextField } from "@/shared/ui/Field";
+import { CheckboxField, FileField, SelectField, TextAreaField, TextField } from "@/shared/ui/Field";
 import { SectionHead } from "@/shared/ui/SectionHead";
 import { useRequestedService } from "./bookingIntent";
 
+/** Vercel function in api/book.ts: saves to Supabase and emails Bidyo. */
+const BOOKING_ENDPOINT = "/api/book";
+
 type Status = "idle" | "sending" | "sent" | "error";
+type Errors = Record<string, string>;
+
+const LETTER_ACCEPT = Object.keys(BOOKING_RULES.letterTypes)
+  .map((ext) => `.${ext}`)
+  .join(",");
+
+/** YYYY-MM-DD in the visitor's time zone, `days` from `from` (default today). */
+function isoDate(days = 0, from?: string) {
+  const d = from ? new Date(`${from}T00:00:00`) : new Date();
+  d.setDate(d.getDate() + days);
+  return d.toLocaleDateString("en-CA");
+}
 
 export function Booking() {
   return (
@@ -18,7 +35,7 @@ export function Booking() {
       className="bg-ink py-section text-white"
       aria-labelledby="book-title"
     >
-      <Container className="grid gap-12 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
+      <Container className="grid gap-12 lg:grid-cols-[minmax(0,4fr)_minmax(0,8fr)]">
         <div>
           <SectionHead
             id="book-title"
@@ -38,24 +55,20 @@ export function Booking() {
             </a>
           </p>
         </div>
-        {FORM_ENDPOINT ? (
-          <BookingForm endpoint={FORM_ENDPOINT} />
-        ) : (
-          <div className="self-end">
-            <ButtonLink href={mailto("Event booking")} size="lg">
-              Email us your event <ArrowIcon />
-            </ButtonLink>
-          </div>
-        )}
+        <BookingForm />
       </Container>
     </section>
   );
 }
 
-/* Progressive enhancement: without JavaScript this is a normal form POST to Formspree, which
-   shows its own confirmation page. With JavaScript it submits in place and reports the result. */
-function BookingForm({ endpoint }: { endpoint: string }) {
+/* Progressive enhancement: without JavaScript this is a normal multipart form POST, and
+   /api/book answers with its own confirmation page. With JavaScript it submits in place,
+   shows field errors from the server, and reports the result. */
+function BookingForm() {
+  const hydrated = useHydrated();
   const [status, setStatus] = useState<Status>("idle");
+  const [errors, setErrors] = useState<Errors>({});
+  const [message, setMessage] = useState("");
   const statusRef = useRef<HTMLParagraphElement>(null);
 
   // A "Book now" link on a service panel preselects that service.
@@ -67,33 +80,79 @@ function BookingForm({ endpoint }: { endpoint: string }) {
     setService(requested);
   }
 
+  const [start, setStart] = useState("");
+  const [multiDay, setMultiDay] = useState(false);
+
   useEffect(() => {
     if (status === "sent" || status === "error") statusRef.current?.focus();
   }, [status]);
 
+  const fail = (msg: string, fieldErrors: Errors = {}) => {
+    setErrors(fieldErrors);
+    setMessage(msg);
+    setStatus("error");
+  };
+
   async function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const form = e.currentTarget;
+    const data = new FormData(form);
+
+    // Check the letter here too, so a too-big file fails fast instead of after uploading.
+    const letter = data.get("letter");
+    if (letter instanceof File && letter.size > 0) {
+      const ext = letter.name.split(".").pop()?.toLowerCase() ?? "";
+      if (!(ext in BOOKING_RULES.letterTypes)) {
+        return fail("Check the highlighted field.", {
+          letter: "Upload a PDF, Word document, JPG or PNG.",
+        });
+      }
+      if (letter.size > BOOKING_RULES.letterMaxBytes) {
+        return fail("Check the highlighted field.", {
+          letter: "The letter must be 4 MB or smaller.",
+        });
+      }
+    }
+
     setStatus("sending");
+    setErrors({});
     try {
-      const res = await fetch(endpoint, {
+      const res = await fetch(BOOKING_ENDPOINT, {
         method: "POST",
-        body: new FormData(form),
+        body: data,
         headers: { Accept: "application/json" },
       });
-      if (!res.ok) throw new Error(`Formspree responded ${res.status}`);
-      form.reset();
-      setService("");
-      setStatus("sent");
+      const body = (await res.json().catch(() => null)) as {
+        ok?: boolean;
+        errors?: Errors;
+        message?: string;
+      } | null;
+      if (res.ok && body?.ok) {
+        form.reset();
+        setService("");
+        setStart("");
+        setMultiDay(false);
+        setStatus("sent");
+        return;
+      }
+      // The server's `message` is written for the no-JavaScript page; here the line below says it.
+      if (body?.errors) return fail("Check the highlighted fields.", body.errors);
+      fail("That didn't go through.");
     } catch {
-      setStatus("error");
+      fail("That didn't go through.");
     }
   }
 
+  const tone = "dark" as const;
   return (
-    <form action={endpoint} method="POST" onSubmit={onSubmit} className="grid gap-6 sm:grid-cols-2">
-      <input type="hidden" name="_subject" value="New booking request (website)" />
-      {/* Spam trap: hidden from people, filled in by bots. Formspree drops those submissions. */}
+    <form
+      action={BOOKING_ENDPOINT}
+      method="POST"
+      encType="multipart/form-data"
+      onSubmit={onSubmit}
+      className="grid gap-x-6 gap-y-7 sm:grid-cols-2"
+    >
+      {/* Spam trap: hidden from people, filled in by bots. The server drops those requests. */}
       <input
         type="text"
         name="_gotcha"
@@ -103,21 +162,78 @@ function BookingForm({ endpoint }: { endpoint: string }) {
         className="hidden"
       />
 
-      <TextField tone="dark" label="Name" name="name" autoComplete="name" />
-      <TextField tone="dark" label="Email" name="email" type="email" autoComplete="email" />
+      <div className="grid gap-x-6 gap-y-7 sm:col-span-2 sm:grid-cols-3">
+        <TextField
+          tone={tone}
+          label="First name"
+          name="first_name"
+          autoComplete="given-name"
+          maxLength={BOOKING_RULES.maxLength.first_name}
+          error={errors.first_name}
+        />
+        <TextField
+          tone={tone}
+          label="Middle name"
+          name="middle_name"
+          autoComplete="additional-name"
+          optional
+          maxLength={BOOKING_RULES.maxLength.middle_name}
+          error={errors.middle_name}
+        />
+        <TextField
+          tone={tone}
+          label="Last name"
+          name="last_name"
+          autoComplete="family-name"
+          maxLength={BOOKING_RULES.maxLength.last_name}
+          error={errors.last_name}
+        />
+      </div>
       <TextField
-        tone="dark"
-        label="Organization or office"
+        tone={tone}
+        label="Email"
+        name="email"
+        type="email"
+        autoComplete="email"
+        hint="UNC email (@unc.edu.ph) preferred"
+        maxLength={BOOKING_RULES.maxLength.email}
+        error={errors.email}
+      />
+      <TextField
+        tone={tone}
+        label="Mobile number"
+        name="mobile"
+        type="tel"
+        inputMode="tel"
+        autoComplete="tel"
+        hint="e.g. 0917 123 4567"
+        pattern={BOOKING_RULES.mobilePattern}
+        title="A Philippine mobile number, like 0917 123 4567"
+        maxLength={BOOKING_RULES.maxLength.mobile}
+        error={errors.mobile}
+      />
+      <TextField
+        tone={tone}
+        label="Organization"
         name="organization"
         autoComplete="organization"
-        optional
+        maxLength={BOOKING_RULES.maxLength.organization}
+        error={errors.organization}
+      />
+      <TextField
+        tone={tone}
+        label="Activity / event title"
+        name="event_title"
+        maxLength={BOOKING_RULES.maxLength.event_title}
+        error={errors.event_title}
       />
       <SelectField
-        tone="dark"
+        tone={tone}
         label="Service"
         name="service"
         value={service}
         onChange={(e) => setService(e.target.value)}
+        error={errors.service}
       >
         <option value="" disabled>
           Choose a service
@@ -129,14 +245,80 @@ function BookingForm({ endpoint }: { endpoint: string }) {
         ))}
         <option value="Other">Other / not sure</option>
       </SelectField>
-      <TextField tone="dark" label="Event date" name="date" type="date" />
-      <TextField tone="dark" label="Venue" name="venue" optional />
-      <TextAreaField
-        tone="dark"
-        label="Details"
-        name="message"
-        hint="What's the event, roughly what time, and what would you like covered?"
+      <TextField
+        tone={tone}
+        label="Number of shooters"
+        name="shooters"
+        type="number"
+        inputMode="numeric"
+        min={BOOKING_RULES.shooters.min}
+        max={BOOKING_RULES.shooters.max}
+        step={1}
+        error={errors.shooters}
+      />
+
+      {/* The last-day field is shown by CSS when the box is ticked, so it works without
+          JavaScript too; with JavaScript it also becomes required and can't precede day 2. */}
+      <fieldset className="group/dates grid gap-x-6 gap-y-4 sm:col-span-2 sm:grid-cols-2">
+        <legend className="sr-only">Event dates</legend>
+        <TextField
+          tone={tone}
+          label={multiDay ? "First day" : "Event date"}
+          name="start_date"
+          type="date"
+          min={hydrated ? isoDate() : undefined}
+          value={start}
+          onChange={(e) => setStart(e.target.value)}
+          error={errors.start_date}
+        />
+        <TextField
+          tone={tone}
+          label="Last day"
+          name="end_date"
+          type="date"
+          className="hidden group-has-[:checked]/dates:block"
+          required={hydrated && multiDay}
+          min={hydrated ? isoDate(1, start || undefined) : undefined}
+          error={errors.end_date}
+        />
+        <CheckboxField
+          tone={tone}
+          label="Multi-day event (2 days or more)"
+          name="multiday"
+          value="yes"
+          checked={multiDay}
+          onChange={(e) => setMultiDay(e.target.checked)}
+          className="sm:col-span-2"
+        />
+      </fieldset>
+
+      <TextField
+        tone={tone}
+        label="Event place"
+        name="venue"
+        maxLength={BOOKING_RULES.maxLength.venue}
         className="sm:col-span-2"
+        error={errors.venue}
+      />
+      <TextAreaField
+        tone={tone}
+        label="Additional requests"
+        name="requests"
+        optional
+        rows={4}
+        maxLength={BOOKING_RULES.maxLength.requests}
+        className="sm:col-span-2"
+        error={errors.requests}
+      />
+      <FileField
+        tone={tone}
+        label="Formal letter"
+        name="letter"
+        optional
+        accept={LETTER_ACCEPT}
+        hint="If you have one: PDF, Word, JPG or PNG, up to 4 MB."
+        className="sm:col-span-2"
+        error={errors.letter}
       />
 
       <div className="flex flex-wrap items-center gap-x-6 gap-y-4 sm:col-span-2">
@@ -147,7 +329,7 @@ function BookingForm({ endpoint }: { endpoint: string }) {
           {status === "sent" && "Thanks! We got your request and will reply by email."}
           {status === "error" && (
             <span className="text-accent-bright">
-              That didn't go through. Try again, or email{" "}
+              {message} Try again, or email{" "}
               <a href={mailto("Event booking")} className="underline underline-offset-4">
                 {CONTACT_EMAIL}
               </a>

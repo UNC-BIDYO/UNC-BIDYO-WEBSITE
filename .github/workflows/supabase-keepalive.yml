@@ -1,0 +1,31 @@
+name: Keep Supabase awake
+
+# Supabase pauses free projects after about a week without activity, which would break the
+# booking form. One small read every 3 days keeps the project active.
+# Needs the repository secrets SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY (supabase/README.md).
+on:
+  schedule:
+    - cron: "17 2 */3 * *"
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Read one booking id
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_KEY" ]; then
+            echo "::warning::SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY secrets are not set; skipping."
+            exit 0
+          fi
+          auth=()
+          case "$SUPABASE_KEY" in eyJ*) auth=(-H "Authorization: Bearer $SUPABASE_KEY") ;; esac
+          curl --fail --silent --show-error --max-time 30 -o /dev/null -w "Supabase responded %{http_code}\n" \
+            -H "apikey: $SUPABASE_KEY" "${auth[@]}" \
+            "${SUPABASE_URL%/}/rest/v1/bookings?select=id&limit=1"
