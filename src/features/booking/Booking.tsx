@@ -5,8 +5,19 @@ import { useHydrated } from "@/shared/hooks/useHydrated";
 import { CONTACT_EMAIL, mailto } from "@/shared/lib/site";
 import { Button } from "@/shared/ui/Button";
 import { Container } from "@/shared/ui/Container";
+import type { DateRangeValue } from "@/shared/ui/DateCalendar";
+import { DatePickerField, toIsoDate } from "@/shared/ui/DatePickerField";
+import {
+  CheckboxField,
+  FileField,
+  FormSection,
+  RequiredNote,
+  SelectField,
+  TextAreaField,
+  TextField,
+} from "@/shared/ui/Field";
 import { ArrowIcon } from "@/shared/ui/icons";
-import { CheckboxField, FileField, SelectField, TextAreaField, TextField } from "@/shared/ui/Field";
+import { NativeSelectOption } from "@/shared/ui/primitives/native-select";
 import { SectionHead } from "@/shared/ui/SectionHead";
 import { useRequestedService } from "./bookingIntent";
 
@@ -20,12 +31,12 @@ const LETTER_ACCEPT = Object.keys(BOOKING_RULES.letterTypes)
   .map((ext) => `.${ext}`)
   .join(",");
 
-/** YYYY-MM-DD in the visitor's time zone, `days` from `from` (default today). */
-function isoDate(days = 0, from?: string) {
-  const d = from ? new Date(`${from}T00:00:00`) : new Date();
-  d.setDate(d.getDate() + days);
-  return d.toLocaleDateString("en-CA");
-}
+/** Local midnight today, for disabling past days in the date picker. */
+const startOfToday = () => {
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  return d;
+};
 
 export function Booking() {
   return (
@@ -61,9 +72,10 @@ export function Booking() {
   );
 }
 
-/* Progressive enhancement: without JavaScript this is a normal multipart form POST, and
-   /api/book answers with its own confirmation page. With JavaScript it submits in place,
-   shows field errors from the server, and reports the result. */
+/* Progressive enhancement: without JavaScript this is a normal multipart form POST (native date
+   inputs, CSS-toggled last day), and /api/book answers with its own confirmation page. With
+   JavaScript the dates use the shadcn/ui calendar, the form submits in place, and field errors
+   from the server appear under their fields. */
 function BookingForm() {
   const hydrated = useHydrated();
   const [status, setStatus] = useState<Status>("idle");
@@ -80,8 +92,8 @@ function BookingForm() {
     setService(requested);
   }
 
-  const [start, setStart] = useState("");
   const [multiDay, setMultiDay] = useState(false);
+  const [dates, setDates] = useState<DateRangeValue>({});
 
   useEffect(() => {
     if (status === "sent" || status === "error") statusRef.current?.focus();
@@ -93,26 +105,35 @@ function BookingForm() {
     setStatus("error");
   };
 
+  const toggleMultiDay = (on: boolean) => {
+    setMultiDay(on);
+    // Keep the first day; a range needs its last day picked again.
+    setDates((d) => ({ from: d.from }));
+  };
+
   async function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const form = e.currentTarget;
     const data = new FormData(form);
+    const found: Errors = {};
+
+    // The calendar posts through hidden inputs, which the browser doesn't validate.
+    if (!dates.from) found.start_date = "Choose the event date.";
+    else if (multiDay && !(dates.to && dates.to > dates.from)) {
+      found.end_date = "Choose the last day of the event (at least the day after the first).";
+    }
 
     // Check the letter here too, so a too-big file fails fast instead of after uploading.
     const letter = data.get("letter");
     if (letter instanceof File && letter.size > 0) {
       const ext = letter.name.split(".").pop()?.toLowerCase() ?? "";
       if (!(ext in BOOKING_RULES.letterTypes)) {
-        return fail("Check the highlighted field.", {
-          letter: "Upload a PDF, Word document, JPG or PNG.",
-        });
-      }
-      if (letter.size > BOOKING_RULES.letterMaxBytes) {
-        return fail("Check the highlighted field.", {
-          letter: "The letter must be 4 MB or smaller.",
-        });
+        found.letter = "Upload a PDF, Word document, JPG or PNG.";
+      } else if (letter.size > BOOKING_RULES.letterMaxBytes) {
+        found.letter = "The letter must be 4 MB or smaller.";
       }
     }
+    if (Object.keys(found).length) return fail("Check the highlighted fields.", found);
 
     setStatus("sending");
     setErrors({});
@@ -130,7 +151,7 @@ function BookingForm() {
       if (res.ok && body?.ok) {
         form.reset();
         setService("");
-        setStart("");
+        setDates({});
         setMultiDay(false);
         setStatus("sent");
         return;
@@ -143,14 +164,14 @@ function BookingForm() {
     }
   }
 
-  const tone = "dark" as const;
+  const max = BOOKING_RULES.maxLength;
   return (
     <form
       action={BOOKING_ENDPOINT}
       method="POST"
       encType="multipart/form-data"
       onSubmit={onSubmit}
-      className="grid gap-x-6 gap-y-7 sm:grid-cols-2"
+      className="flex min-w-0 flex-col gap-8"
     >
       {/* Spam trap: hidden from people, filled in by bots. The server drops those requests. */}
       <input
@@ -161,167 +182,193 @@ function BookingForm() {
         aria-hidden
         className="hidden"
       />
+      <RequiredNote />
 
-      <div className="grid gap-x-6 gap-y-7 sm:col-span-2 sm:grid-cols-3">
-        <TextField
-          tone={tone}
-          label="First name"
-          name="first_name"
-          autoComplete="given-name"
-          maxLength={BOOKING_RULES.maxLength.first_name}
-          error={errors.first_name}
-        />
-        <TextField
-          tone={tone}
-          label="Middle name"
-          name="middle_name"
-          autoComplete="additional-name"
-          optional
-          maxLength={BOOKING_RULES.maxLength.middle_name}
-          error={errors.middle_name}
-        />
-        <TextField
-          tone={tone}
-          label="Last name"
-          name="last_name"
-          autoComplete="family-name"
-          maxLength={BOOKING_RULES.maxLength.last_name}
-          error={errors.last_name}
-        />
-      </div>
-      <TextField
-        tone={tone}
-        label="Email"
-        name="email"
-        type="email"
-        autoComplete="email"
-        hint="UNC email (@unc.edu.ph) preferred"
-        maxLength={BOOKING_RULES.maxLength.email}
-        error={errors.email}
-      />
-      <TextField
-        tone={tone}
-        label="Mobile number"
-        name="mobile"
-        type="tel"
-        inputMode="tel"
-        autoComplete="tel"
-        hint="e.g. 0917 123 4567"
-        pattern={BOOKING_RULES.mobilePattern}
-        title="A Philippine mobile number, like 0917 123 4567"
-        maxLength={BOOKING_RULES.maxLength.mobile}
-        error={errors.mobile}
-      />
-      <TextField
-        tone={tone}
-        label="Organization"
-        name="organization"
-        autoComplete="organization"
-        maxLength={BOOKING_RULES.maxLength.organization}
-        error={errors.organization}
-      />
-      <TextField
-        tone={tone}
-        label="Activity / event title"
-        name="event_title"
-        maxLength={BOOKING_RULES.maxLength.event_title}
-        error={errors.event_title}
-      />
-      <SelectField
-        tone={tone}
-        label="Service"
-        name="service"
-        value={service}
-        onChange={(e) => setService(e.target.value)}
-        error={errors.service}
-      >
-        <option value="" disabled>
-          Choose a service
-        </option>
-        {services.map((s) => (
-          <option key={s.slug} value={s.title}>
-            {s.title}
-          </option>
-        ))}
-        <option value="Other">Other / not sure</option>
-      </SelectField>
-      <TextField
-        tone={tone}
-        label="Number of shooters"
-        name="shooters"
-        type="number"
-        inputMode="numeric"
-        min={BOOKING_RULES.shooters.min}
-        max={BOOKING_RULES.shooters.max}
-        step={1}
-        error={errors.shooters}
-      />
+      <FormSection title="Your details">
+        <div className="grid gap-x-5 gap-y-6 sm:grid-cols-6">
+          <TextField
+            label="First name"
+            name="first_name"
+            autoComplete="given-name"
+            maxLength={max.first_name}
+            error={errors.first_name}
+            className="sm:col-span-2"
+          />
+          <TextField
+            label="Middle name"
+            name="middle_name"
+            autoComplete="additional-name"
+            optional
+            maxLength={max.middle_name}
+            error={errors.middle_name}
+            className="sm:col-span-2"
+          />
+          <TextField
+            label="Last name"
+            name="last_name"
+            autoComplete="family-name"
+            maxLength={max.last_name}
+            error={errors.last_name}
+            className="sm:col-span-2"
+          />
+          <TextField
+            label="Email"
+            name="email"
+            type="email"
+            autoComplete="email"
+            hint="UNC email (@unc.edu.ph) preferred"
+            maxLength={max.email}
+            error={errors.email}
+            className="sm:col-span-3"
+          />
+          <TextField
+            label="Mobile number"
+            name="mobile"
+            type="tel"
+            inputMode="tel"
+            autoComplete="tel"
+            hint="e.g. 0917 123 4567"
+            pattern={BOOKING_RULES.mobilePattern}
+            title="A Philippine mobile number, like 0917 123 4567"
+            maxLength={max.mobile}
+            error={errors.mobile}
+            className="sm:col-span-3"
+          />
+        </div>
+      </FormSection>
 
-      {/* The last-day field is shown by CSS when the box is ticked, so it works without
-          JavaScript too; with JavaScript it also becomes required and can't precede day 2. */}
-      <fieldset className="group/dates grid gap-x-6 gap-y-4 sm:col-span-2 sm:grid-cols-2">
-        <legend className="sr-only">Event dates</legend>
-        <TextField
-          tone={tone}
-          label={multiDay ? "First day" : "Event date"}
-          name="start_date"
-          type="date"
-          min={hydrated ? isoDate() : undefined}
-          value={start}
-          onChange={(e) => setStart(e.target.value)}
-          error={errors.start_date}
-        />
-        <TextField
-          tone={tone}
-          label="Last day"
-          name="end_date"
-          type="date"
-          className="hidden group-has-[:checked]/dates:block"
-          required={hydrated && multiDay}
-          min={hydrated ? isoDate(1, start || undefined) : undefined}
-          error={errors.end_date}
-        />
-        <CheckboxField
-          tone={tone}
-          label="Multi-day event (2 days or more)"
-          name="multiday"
-          value="yes"
-          checked={multiDay}
-          onChange={(e) => setMultiDay(e.target.checked)}
-          className="sm:col-span-2"
-        />
-      </fieldset>
+      <FormSection title="Event">
+        <div className="grid gap-x-5 gap-y-6 sm:grid-cols-2">
+          <TextField
+            label="Organization"
+            name="organization"
+            autoComplete="organization"
+            maxLength={max.organization}
+            error={errors.organization}
+          />
+          <TextField
+            label="Activity / event title"
+            name="event_title"
+            maxLength={max.event_title}
+            error={errors.event_title}
+          />
+          <SelectField
+            label="Service"
+            name="service"
+            value={service}
+            onChange={(e) => setService(e.target.value)}
+            error={errors.service}
+          >
+            <NativeSelectOption value="" disabled>
+              Choose a service
+            </NativeSelectOption>
+            {services.map((s) => (
+              <NativeSelectOption key={s.slug} value={s.title}>
+                {s.title}
+              </NativeSelectOption>
+            ))}
+            <NativeSelectOption value="Other">Other / not sure</NativeSelectOption>
+          </SelectField>
+          <TextField
+            label="Number of shooters"
+            name="shooters"
+            type="number"
+            inputMode="numeric"
+            min={BOOKING_RULES.shooters.min}
+            max={BOOKING_RULES.shooters.max}
+            step={1}
+            error={errors.shooters}
+          />
+        </div>
+      </FormSection>
 
-      <TextField
-        tone={tone}
-        label="Event place"
-        name="venue"
-        maxLength={BOOKING_RULES.maxLength.venue}
-        className="sm:col-span-2"
-        error={errors.venue}
-      />
-      <TextAreaField
-        tone={tone}
-        label="Additional requests"
-        name="requests"
-        optional
-        rows={4}
-        maxLength={BOOKING_RULES.maxLength.requests}
-        className="sm:col-span-2"
-        error={errors.requests}
-      />
-      <FileField
-        tone={tone}
-        label="Formal letter"
-        name="letter"
-        optional
-        accept={LETTER_ACCEPT}
-        hint="If you have one: PDF, Word, JPG or PNG, up to 4 MB."
-        className="sm:col-span-2"
-        error={errors.letter}
-      />
+      <FormSection title="Date & place">
+        {/* group/dates: without JavaScript the last-day input is shown by CSS when the box is
+            ticked. With JavaScript one calendar handles both: single day, or a range. */}
+        <div className="group/dates grid gap-x-5 gap-y-6 sm:grid-cols-2">
+          {hydrated ? (
+            <>
+              <DatePickerField
+                label={multiDay ? "Event dates" : "Event date"}
+                mode={multiDay ? "range" : "single"}
+                value={dates}
+                onChange={setDates}
+                disabled={{ before: startOfToday() }}
+                placeholder={multiDay ? "Pick the first and last day" : "Pick a date"}
+                error={errors.start_date ?? errors.end_date}
+                className="sm:col-span-2"
+              />
+              <input
+                type="hidden"
+                name="start_date"
+                value={dates.from ? toIsoDate(dates.from) : ""}
+              />
+              {multiDay && (
+                <input
+                  type="hidden"
+                  name="end_date"
+                  value={dates.from && dates.to && dates.to > dates.from ? toIsoDate(dates.to) : ""}
+                />
+              )}
+            </>
+          ) : (
+            <>
+              <TextField
+                label="Event date"
+                name="start_date"
+                type="date"
+                error={errors.start_date}
+              />
+              <TextField
+                label="Last day"
+                name="end_date"
+                type="date"
+                required={false}
+                className="hidden group-has-[:checked]/dates:flex"
+                error={errors.end_date}
+              />
+            </>
+          )}
+          <CheckboxField
+            label="Multi-day event (2 days or more)"
+            name="multiday"
+            value="yes"
+            checked={multiDay}
+            onCheckedChange={toggleMultiDay}
+            className="sm:col-span-2"
+          />
+          <TextField
+            label="Event place"
+            name="venue"
+            maxLength={max.venue}
+            error={errors.venue}
+            className="sm:col-span-2"
+          />
+        </div>
+      </FormSection>
 
-      <div className="flex flex-wrap items-center gap-x-6 gap-y-4 sm:col-span-2">
+      <FormSection title="Extras">
+        <div className="grid gap-y-6">
+          <TextAreaField
+            label="Additional requests"
+            name="requests"
+            optional
+            rows={4}
+            maxLength={max.requests}
+            error={errors.requests}
+          />
+          <FileField
+            label="Formal letter"
+            name="letter"
+            optional
+            accept={LETTER_ACCEPT}
+            hint="If you have one: PDF, Word, JPG or PNG, up to 4 MB."
+            error={errors.letter}
+          />
+        </div>
+      </FormSection>
+
+      <div className="flex flex-wrap items-center gap-x-6 gap-y-4">
         <Button type="submit" size="lg" disabled={status === "sending"}>
           {status === "sending" ? "Sending…" : "Send request"} <ArrowIcon />
         </Button>
