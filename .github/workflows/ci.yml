@@ -45,6 +45,10 @@ jobs:
       - name: Lint
         run: pnpm lint
 
+      # Unused files, exports and dependencies (knip.json).
+      - name: Dead code
+        run: pnpm knip
+
       # API, email, Google Calendar, admin and overlap-check tests (tests/), external services stubbed.
       - name: Test
         run: pnpm test:coverage

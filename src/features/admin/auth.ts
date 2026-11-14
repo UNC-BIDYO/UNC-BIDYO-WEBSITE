@@ -56,7 +56,7 @@ function useRawSession(): SessionState {
   return state;
 }
 
-export class ApiError extends Error {
+class ApiError extends Error {
   readonly status: number;
   constructor(message: string, status: number) {
     super(message);

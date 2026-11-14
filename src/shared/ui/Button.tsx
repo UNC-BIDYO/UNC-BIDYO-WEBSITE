@@ -26,12 +26,12 @@ const sizes = {
   "icon-sm": "h-11 w-11",
 } as const;
 
-export type ButtonVariant = keyof typeof variants;
-export type ButtonSize = keyof typeof sizes;
+type ButtonVariant = keyof typeof variants;
+type ButtonSize = keyof typeof sizes;
 
 type StyleProps = { variant?: ButtonVariant; size?: ButtonSize };
 
-export const buttonStyles = ({ variant = "primary", size = "md" }: StyleProps = {}) =>
+const buttonStyles = ({ variant = "primary", size = "md" }: StyleProps = {}) =>
   cn(base, variants[variant], sizes[size]);
 
 type ButtonProps = ComponentPropsWithoutRef<"button"> & StyleProps;
