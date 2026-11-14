@@ -7,6 +7,80 @@
 @import "@fontsource/archivo/latin-500.css";
 @import "@fontsource/archivo/latin-600.css";
 @import "@fontsource/jetbrains-mono/latin-500.css";
+/* Enter/exit animations used by the shadcn/ui popover. */
+@import "tw-animate-css";
+
+/* shadcn/ui's `dark:` styles follow our dark sections (data-surface="dark"), not the
+   visitor's OS setting: the site has fixed light and dark sections, not a dark mode. */
+@custom-variant dark (&:where([data-surface="dark"], [data-surface="dark"] *));
+
+/* shadcn/ui tokens, mapped onto the site palette. Values switch per surface below, so the same
+   primitives read correctly on paper and on ink. --color-accent and --color-muted keep the
+   site's own meaning (logo red, muted text). */
+@theme inline {
+  --color-background: var(--ui-background);
+  --color-foreground: var(--ui-foreground);
+  --color-primary: var(--ui-primary);
+  --color-primary-foreground: var(--ui-primary-foreground);
+  --color-secondary: var(--ui-secondary);
+  --color-secondary-foreground: var(--ui-foreground);
+  --color-muted-foreground: var(--ui-muted-foreground);
+  --color-accent-foreground: #fff;
+  --color-destructive: var(--ui-destructive);
+  --color-input: var(--ui-input);
+  --color-ring: var(--ui-ring);
+  --color-border: var(--ui-border);
+  --color-popover: var(--ui-popover);
+  --color-popover-foreground: var(--ui-foreground);
+}
+
+:root {
+  --ui-background: #ffffff;
+  --ui-foreground: #0b0b0c;
+  --ui-primary: #6c0204;
+  --ui-primary-foreground: #ffffff;
+  --ui-secondary: #f6f6f4;
+  --ui-muted-foreground: #55555a;
+  --ui-destructive: #6c0204;
+  --ui-input: #8a8a8f;
+  --ui-ring: #6c0204;
+  --ui-border: #dcdcd8;
+  --ui-popover: #ffffff;
+}
+
+[data-surface="dark"] {
+  --ui-background: #161618;
+  --ui-foreground: #ffffff;
+  --ui-primary: #ec6266;
+  --ui-primary-foreground: #0b0b0c;
+  --ui-secondary: #232326;
+  --ui-muted-foreground: #a1a1a6;
+  --ui-destructive: #ec6266;
+  --ui-input: rgb(255 255 255 / 0.35);
+  --ui-ring: #ffffff;
+  --ui-border: rgb(255 255 255 / 0.15);
+  --ui-popover: #161618;
+}
+
+@theme {
+  /* Square corners and no drop shadows anywhere, including the shadcn/ui primitives
+     (the cinematic/slate direction; no soft grey shadows). */
+  --radius-xs: 0;
+  --radius-sm: 0;
+  --radius-md: 0;
+  --radius-lg: 0;
+  --radius-xl: 0;
+  --radius-2xl: 0;
+  --radius-3xl: 0;
+  --radius-4xl: 0;
+  --shadow-2xs: none;
+  --shadow-xs: none;
+  --shadow-sm: none;
+  --shadow-md: none;
+  --shadow-lg: none;
+  --shadow-xl: none;
+  --shadow-2xl: none;
+}
 
 @theme {
   /* type: cinematic condensed display, grotesk body, mono for slate-style labels.
@@ -79,6 +153,13 @@
   /* On dark/photo surfaces the burgundy ring disappears; switch to white. */
   [data-surface="dark"] :focus-visible {
     outline-color: #fff;
+  }
+}
+
+/* The popover's zoom/slide comes from tw-animate-css; drop it for reduced motion. */
+@media (prefers-reduced-motion: reduce) {
+  [data-slot="popover-content"] {
+    animation: none !important;
   }
 }
 
