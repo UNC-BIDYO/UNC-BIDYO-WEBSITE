@@ -38,7 +38,9 @@ const LFS_POINTER = "version https://git-lfs.github.com/spec/v1";
 const pointers = readdirSync(outDir, { recursive: true, withFileTypes: true })
   .filter((e) => e.isFile())
   .map((e) => resolve(e.parentPath, e.name))
-  .filter((file) => statSync(file).size < 1024 && readFileSync(file, "utf8").startsWith(LFS_POINTER));
+  .filter(
+    (file) => statSync(file).size < 1024 && readFileSync(file, "utf8").startsWith(LFS_POINTER),
+  );
 if (pointers.length) {
   throw new Error(
     "build: these files are Git LFS pointers, not real files. Fetch LFS content first " +
@@ -94,7 +96,9 @@ const missing = [...new Set(urls)].filter(
   (url) => url !== base && !existsSync(resolve(outDir, decodeURI(url.slice(base.length)))),
 );
 if (missing.length) {
-  throw new Error(`prerender: HTML references files missing from dist/:\n  ${missing.join("\n  ")}`);
+  throw new Error(
+    `prerender: HTML references files missing from dist/:\n  ${missing.join("\n  ")}`,
+  );
 }
 
 rmSync(ssrOutDir, { recursive: true, force: true });

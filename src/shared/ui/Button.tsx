@@ -46,5 +46,7 @@ type ButtonLinkProps = ComponentPropsWithoutRef<"a"> & StyleProps;
 
 /** A link that looks like a button (navigation, mailto). */
 export function ButtonLink({ variant, size, className, ...rest }: ButtonLinkProps) {
+  // The link text arrives through `children` in {...rest}, which the rule can't see.
+  // oxlint-disable-next-line jsx-a11y/anchor-has-content
   return <a className={cx(buttonStyles({ variant, size }), className)} {...rest} />;
 }

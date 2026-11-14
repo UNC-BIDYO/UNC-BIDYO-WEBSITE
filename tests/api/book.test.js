@@ -6,7 +6,9 @@ const { POST } = await import("../../api/book.ts");
 const { renderBookingEmail } = await import("../../api/_lib/email.ts");
 
 const calls = [];
-let failStorage = false, failEmail = false, failInsert = false;
+let failStorage = false,
+  failEmail = false,
+  failInsert = false;
 globalThis.fetch = async (url, init = {}) => {
   const u = String(url);
   calls.push({ url: u, init });
@@ -15,7 +17,10 @@ globalThis.fetch = async (url, init = {}) => {
   if (u.includes("resend") && failEmail) return new Response("bad", { status: 422 });
   if (u.includes("/rest/v1/bookings")) {
     const row = JSON.parse(init.body);
-    return Response.json([{ id: "0b5ecd6a-c097-4a65-9bfd-f17d4f084636", status: "pending", ...row }], { status: 201 });
+    return Response.json(
+      [{ id: "0b5ecd6a-c097-4a65-9bfd-f17d4f084636", status: "pending", ...row }],
+      { status: 201 },
+    );
   }
   return new Response(u.includes("resend") ? '{"id":"x"}' : "", { status: 201 });
 };
@@ -27,23 +32,42 @@ const ENV = {
   BOOKING_NOTIFY_TO: "uncbidyoorg@gmail.com",
   BOOKING_FROM: "UNC Bidyo <no-reply@uncbidyo.org>",
 };
-const setEnv = (on) => { for (const [k, v] of Object.entries(ENV)) on ? (process.env[k] = v) : delete process.env[k]; };
+const setEnv = (on) => {
+  for (const [k, v] of Object.entries(ENV)) {
+    if (on) process.env[k] = v;
+    else delete process.env[k];
+  }
+};
 
 const future = (days) => new Date(Date.now() + days * 864e5).toISOString().slice(0, 10);
 function form(overrides = {}, letter) {
   const f = new FormData();
   const base = {
-    first_name: "Juan", middle_name: "Santos", last_name: "Dela Cruz", email: "juan@unc.edu.ph", mobile: "0917 123 4567",
-    organization: "SCIS", event_title: "Intramurals 2026", service: "Event Coverage",
-    start_date: future(10), venue: "UNC Gym", shooters: "3", requests: "Group photo at 3pm",
-    _gotcha: "", ...overrides,
+    first_name: "Juan",
+    middle_name: "Santos",
+    last_name: "Dela Cruz",
+    email: "juan@unc.edu.ph",
+    mobile: "0917 123 4567",
+    organization: "SCIS",
+    event_title: "Intramurals 2026",
+    service: "Event Coverage",
+    start_date: future(10),
+    venue: "UNC Gym",
+    shooters: "3",
+    requests: "Group photo at 3pm",
+    _gotcha: "",
+    ...overrides,
   };
   for (const [k, v] of Object.entries(base)) if (v !== undefined) f.append(k, v);
   f.append("letter", letter ?? new File([], ""), letter?.name ?? "");
   return f;
 }
 const req = (f, json = true) =>
-  new Request("http://x/api/book", { method: "POST", body: f, headers: json ? { Accept: "application/json" } : {} });
+  new Request("http://x/api/book", {
+    method: "POST",
+    body: f,
+    headers: json ? { Accept: "application/json" } : {},
+  });
 const run = async (f, json = true) => {
   calls.length = 0;
   const res = await POST(req(f, json));
@@ -52,38 +76,61 @@ const run = async (f, json = true) => {
 };
 const insertCall = () => calls.find((c) => c.url.includes("/rest/v1/bookings"));
 const storageCall = () => calls.find((c) => c.url.includes("/storage/"));
-const mails = () => calls.filter((c) => c.url.includes("resend")).map((c) => JSON.parse(c.init.body));
-const quiet = async (fn) => { const e = console.error, w = console.warn; console.error = console.warn = () => {}; try { return await fn(); } finally { console.error = e; console.warn = w; } };
+const mails = () =>
+  calls.filter((c) => c.url.includes("resend")).map((c) => JSON.parse(c.init.body));
+const quiet = async (fn) => {
+  const e = console.error,
+    w = console.warn;
+  console.error = console.warn = () => {};
+  try {
+    return await fn();
+  } finally {
+    console.error = e;
+    console.warn = w;
+  }
+};
 beforeEach(() => setEnv(true));
 
 it("503 when Supabase keys are missing", async () => {
   setEnv(false);
   const r = await quiet(() => run(form()));
-  assert.equal(r.status, 503); assert.equal(calls.length, 0);
+  assert.equal(r.status, 503);
+  assert.equal(calls.length, 0);
 });
 
 it("valid booking: insert (returning row) + customer summary + Bidyo copy", async () => {
   const r = await run(form());
-  assert.equal(r.status, 200); assert.deepEqual(r.body, { ok: true, outcome: "received" });
+  assert.equal(r.status, 200);
+  assert.deepEqual(r.body, { ok: true, outcome: "received" });
   const ins = insertCall();
   assert.equal(ins.url, "https://proj.supabase.co/rest/v1/bookings");
   assert.equal(ins.init.headers.Prefer, "return=representation");
   assert.equal(ins.init.headers.Authorization, undefined, "non-JWT key must not be sent as Bearer");
   const row = JSON.parse(ins.init.body);
-  assert.equal(row.shooters, 3); assert.equal(row.end_date, null); assert.equal(row.letter_path, null);
-  assert.equal(row.first_name, "Juan"); assert.equal(row.middle_name, "Santos");
+  assert.equal(row.shooters, 3);
+  assert.equal(row.end_date, null);
+  assert.equal(row.letter_path, null);
+  assert.equal(row.first_name, "Juan");
+  assert.equal(row.middle_name, "Santos");
   const [customer, copy] = mails();
   assert.deepEqual(customer.to, ["juan@unc.edu.ph"]);
   assert.equal(customer.reply_to, undefined, "customer email is no-reply");
   assert.equal(customer.from, "UNC Bidyo <no-reply@uncbidyo.org>");
   assert.equal(customer.subject, "We received your booking request: Intramurals 2026");
-  assert.match(customer.html, /Booking Request Received/); assert.match(customer.html, /Pending review/);
+  assert.match(customer.html, /Booking Request Received/);
+  assert.match(customer.html, /Pending review/);
   assert.match(customer.html, /0b5ecd6a-c097-4a65-9bfd-f17d4f084636/);
   assert.match(customer.html, /Dear Juan,/);
-  assert.doesNotMatch(customer.html, /0917 123 4567/, "customer copy doesn't repeat contact details");
-  assert.deepEqual(copy.to, ["uncbidyoorg@gmail.com"]); assert.equal(copy.reply_to, "juan@unc.edu.ph");
+  assert.doesNotMatch(
+    customer.html,
+    /0917 123 4567/,
+    "customer copy doesn't repeat contact details",
+  );
+  assert.deepEqual(copy.to, ["uncbidyoorg@gmail.com"]);
+  assert.equal(copy.reply_to, "juan@unc.edu.ph");
   assert.match(copy.subject, /^New booking: Intramurals 2026 \(\w{3}, \w+ \d{1,2}, \d{4}\)$/);
-  assert.match(copy.html, /Juan Santos Dela Cruz/); assert.match(copy.html, /0917 123 4567/);
+  assert.match(copy.html, /Juan Santos Dela Cruz/);
+  assert.match(copy.html, /0917 123 4567/);
   assert.match(copy.text, /Name: Juan Santos Dela Cruz/);
 });
 
@@ -92,7 +139,8 @@ it("resend.dev sender: customer summary skipped, Bidyo copy still sent", async (
   await quiet(() => run(form()));
   process.env.BOOKING_FROM = ENV.BOOKING_FROM;
   const m = mails();
-  assert.equal(m.length, 1); assert.deepEqual(m[0].to, ["uncbidyoorg@gmail.com"]);
+  assert.equal(m.length, 1);
+  assert.deepEqual(m[0].to, ["uncbidyoorg@gmail.com"]);
 });
 
 it("middle name optional: stored as null, not in the name", async () => {
@@ -109,16 +157,24 @@ it("legacy JWT key is also sent as Bearer", async () => {
 });
 
 it("multi-day + letter: upload, row, attachment only on Bidyo copy, range in subject", async () => {
-  const pdf = new File([new Uint8Array([37, 80, 68, 70])], "Request Letter (signed).PDF", { type: "application/pdf" });
+  const pdf = new File([new Uint8Array([37, 80, 68, 70])], "Request Letter (signed).PDF", {
+    type: "application/pdf",
+  });
   const r = await run(form({ multiday: "yes", end_date: future(12) }, pdf));
   assert.equal(r.status, 200);
-  const up = storageCall(), ins = insertCall();
-  assert.match(up.url, /\/storage\/v1\/object\/letters\/\d{4}-\d{2}\/[0-9a-f-]{36}-Request-Letter-signed-\.PDF$/);
+  const up = storageCall(),
+    ins = insertCall();
+  assert.match(
+    up.url,
+    /\/storage\/v1\/object\/letters\/\d{4}-\d{2}\/[0-9a-f-]{36}-Request-Letter-signed-\.PDF$/,
+  );
   const row = JSON.parse(ins.init.body);
-  assert.equal(row.end_date, future(12)); assert.ok(up.url.endsWith(row.letter_path));
+  assert.equal(row.end_date, future(12));
+  assert.ok(up.url.endsWith(row.letter_path));
   const [customer, copy] = mails();
   assert.equal(customer.attachments, undefined);
-  assert.match(customer.html, /Formal letter/); assert.match(customer.html, />Received</);
+  assert.match(customer.html, /Formal letter/);
+  assert.match(customer.html, />Received</);
   assert.equal(copy.attachments[0].content, Buffer.from([37, 80, 68, 70]).toString("base64"));
   assert.match(copy.subject, / – /, "date range in subject");
   assert.match(customer.html, />Dates</);
@@ -148,36 +204,45 @@ const invalid = [
 for (const [name, o, field] of invalid) {
   it(`400 ${name}`, async () => {
     const r = await run(form(o));
-    assert.equal(r.status, 400); assert.ok(r.body.errors[field], JSON.stringify(r.body));
-    assert.equal(insertCall(), undefined, "nothing saved"); assert.equal(mails().length, 0, "nothing sent");
+    assert.equal(r.status, 400);
+    assert.ok(r.body.errors[field], JSON.stringify(r.body));
+    assert.equal(insertCall(), undefined, "nothing saved");
+    assert.equal(mails().length, 0, "nothing sent");
   });
 }
 for (const ok of ["+63 917 123 4567", "+639171234567", "09171234567", "0917-123-4567"]) {
-  it(`mobile accepted: ${ok}`, async () => assert.equal((await run(form({ mobile: ok }))).status, 200));
+  it(`mobile accepted: ${ok}`, async () =>
+    assert.equal((await run(form({ mobile: ok }))).status, 200));
 }
 it("400 letter wrong type", async () => {
   const r = await run(form({}, new File(["x"], "virus.exe")));
-  assert.equal(r.status, 400); assert.ok(r.body.errors.letter);
+  assert.equal(r.status, 400);
+  assert.ok(r.body.errors.letter);
 });
 it("400 letter too big", async () => {
   const r = await run(form({}, new File([new Uint8Array(4 * 1024 * 1024 + 1)], "big.pdf")));
-  assert.equal(r.status, 400); assert.match(r.body.errors.letter, /4 MB/);
+  assert.equal(r.status, 400);
+  assert.match(r.body.errors.letter, /4 MB/);
 });
 it("honeypot: 200, nothing saved or sent", async () => {
   const r = await run(form({ _gotcha: "spam" }));
-  assert.equal(r.status, 200); assert.equal(calls.length, 0);
+  assert.equal(r.status, 200);
+  assert.equal(calls.length, 0);
 });
 it("storage failure: 502, nothing inserted or sent", async () => {
   failStorage = true;
   const r = await quiet(() => run(form({}, new File(["x"], "a.png"))));
   failStorage = false;
-  assert.equal(r.status, 502); assert.equal(insertCall(), undefined); assert.equal(mails().length, 0);
+  assert.equal(r.status, 502);
+  assert.equal(insertCall(), undefined);
+  assert.equal(mails().length, 0);
 });
 it("insert failure: 502, no emails", async () => {
   failInsert = true;
   const r = await quiet(() => run(form()));
   failInsert = false;
-  assert.equal(r.status, 502); assert.equal(mails().length, 0);
+  assert.equal(r.status, 502);
+  assert.equal(mails().length, 0);
 });
 it("email failure still returns 200 (booking saved)", async () => {
   failEmail = true;
@@ -187,19 +252,34 @@ it("email failure still returns 200 (booking saved)", async () => {
 });
 it("no-JS success returns an HTML page", async () => {
   const r = await run(form(), false);
-  assert.equal(r.status, 200); assert.match(r.body, /<h1>Request sent<\/h1>/); assert.match(r.body, /href="\/#book"/);
+  assert.equal(r.status, 200);
+  assert.match(r.body, /<h1>Request sent<\/h1>/);
+  assert.match(r.body, /href="\/#book"/);
 });
 it("no-JS errors are listed and escaped", async () => {
   const r = await run(form({ first_name: "", email: "<b>" }), false);
-  assert.equal(r.status, 400); assert.match(r.body, /<li>Enter your first name\.<\/li>/); assert.doesNotMatch(r.body, /<b>/);
+  assert.equal(r.status, 400);
+  assert.match(r.body, /<li>Enter your first name\.<\/li>/);
+  assert.doesNotMatch(r.body, /<b>/);
 });
 
 // Email templates: every kind renders, escapes input, and carries its subject/status.
 const sample = {
-  id: "0b5ecd6a-c097-4a65-9bfd-f17d4f084636", first_name: "Kurt", middle_name: null, last_name: "Pasiona",
-  email: "kurt@unc.edu.ph", mobile: "0917 123 4567", organization: "School of Computer and Information Sciences",
-  event_title: "Learning-Drive <2026>", service: "Event Coverage", start_date: "2026-09-16", end_date: "2026-09-17",
-  venue: "Social Hall", shooters: 2, requests: "Please cover the opening program & awarding.", letter_path: "x",
+  id: "0b5ecd6a-c097-4a65-9bfd-f17d4f084636",
+  first_name: "Kurt",
+  middle_name: null,
+  last_name: "Pasiona",
+  email: "kurt@unc.edu.ph",
+  mobile: "0917 123 4567",
+  organization: "School of Computer and Information Sciences",
+  event_title: "Learning-Drive <2026>",
+  service: "Event Coverage",
+  start_date: "2026-09-16",
+  end_date: "2026-09-17",
+  venue: "Social Hall",
+  shooters: 2,
+  requests: "Please cover the opening program & awarding.",
+  letter_path: "x",
 };
 const expect = {
   received: [/We received your booking request: Learning-Drive <2026>/, /Pending review/],
@@ -210,13 +290,17 @@ const expect = {
 };
 for (const [kind, [subject, pill]] of Object.entries(expect)) {
   it(`email "${kind}": subject, status, escaping`, async () => {
-    const m = renderBookingEmail(kind, sample, { reason: "We're already covering the university foundation day.", letterName: "letter.pdf" });
-    assert.match(m.subject, subject); assert.match(m.html, pill);
-    assert.match(m.html, /Learning-Drive &lt;2026&gt;/); assert.doesNotMatch(m.html, /<2026>/);
+    const m = renderBookingEmail(kind, sample, {
+      reason: "We're already covering the university foundation day.",
+      letterName: "letter.pdf",
+    });
+    assert.match(m.subject, subject);
+    assert.match(m.html, pill);
+    assert.match(m.html, /Learning-Drive &lt;2026&gt;/);
+    assert.doesNotMatch(m.html, /<2026>/);
     assert.match(m.html, /Wed, September 16 – Thu, September 17, 2026/);
     assert.match(m.text, /Reference #: 0b5ecd6a/);
     if (kind === "declined") assert.match(m.html, /Reason:<\/strong> We&#39;re already covering/);
     if (kind === "unavailable") assert.match(m.html, /\/#schedule/);
   });
 }
-

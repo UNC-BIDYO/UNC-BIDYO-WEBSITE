@@ -47,6 +47,9 @@ export function CyclingTile({
   }, [photos.length, interval, delay, stopped]);
 
   return (
+    // Hover only pauses the slideshow (a mouse nicety); it isn't a control, so the figure stays
+    // non-interactive. Motion already stops entirely with prefers-reduced-motion.
+    // oxlint-disable-next-line jsx-a11y/no-noninteractive-element-interactions
     <figure
       className={cx("relative overflow-hidden bg-ink", className)}
       onMouseEnter={() => setHovered(true)}

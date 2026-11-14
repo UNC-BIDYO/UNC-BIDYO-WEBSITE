@@ -37,6 +37,8 @@ export default function DateCalendar({
       mode="single"
       selected={value.from}
       onSelect={(day) => onChange({ from: day })}
+      // Moves focus into the calendar when its popover opens (react-day-picker's documented way).
+      // oxlint-disable-next-line jsx-a11y/no-autofocus
       autoFocus
     />
   ) : (
@@ -45,6 +47,8 @@ export default function DateCalendar({
       mode="range"
       selected={value.from ? { from: value.from, to: value.to } : undefined}
       onSelect={(range) => onChange({ from: range?.from, to: range?.to })}
+      // Moves focus into the calendar when its popover opens (react-day-picker's documented way).
+      // oxlint-disable-next-line jsx-a11y/no-autofocus
       autoFocus
     />
   );

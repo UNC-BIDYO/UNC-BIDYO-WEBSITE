@@ -41,13 +41,17 @@ jobs:
       - name: Type-check
         run: pnpm typecheck
 
+      # oxlint (.oxlintrc.json): errors fail the build; warnings are reported only.
+      - name: Lint
+        run: pnpm lint
+
       # API, email, Google Calendar, admin and overlap-check tests (tests/), external services stubbed.
       - name: Test
         run: pnpm test:coverage
 
-      # Only src/ is checked: the root config files are generated and managed by Figma Make.
+      # src, api, scripts and tests; the root config files are generated and managed by Figma Make.
       - name: Check formatting
-        run: pnpm exec oxfmt --check src
+        run: pnpm format:check
 
       - name: Build
         run: pnpm build
