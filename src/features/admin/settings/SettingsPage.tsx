@@ -75,7 +75,7 @@ export function SettingsPage() {
               <ul className="list-disc pl-4">
                 <li>When on, booked days also can't be picked in the website's date picker.</li>
                 <li>
-                  New requests are checked right away; the date picker catches up within about 15
+                  New requests are checked right away; the date picker catches up within about two
                   minutes.
                 </li>
                 <li>Any event in the calendar counts, except ones marked &ldquo;Free&rdquo;.</li>
