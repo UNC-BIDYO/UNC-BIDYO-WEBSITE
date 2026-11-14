@@ -1,4 +1,5 @@
 import { useEffect, useSyncExternalStore } from "react";
+import { parseDay } from "@/shared/lib/dates";
 
 /** Booked days from /api/schedule (dates only), shared by the Schedule section and the booking
     date picker. Loaded once on the first mount, then refreshed when the visitor comes back to
@@ -25,12 +26,6 @@ const set = (next: ScheduleState) => {
   listeners.forEach((notify) => notify());
 };
 
-/** "2026-12-05" → local midnight on that calendar day (what the calendar compares against). */
-const toLocalDate = (iso: string) => {
-  const [y, m, d] = iso.split("-").map(Number);
-  return new Date(y, m - 1, d);
-};
-
 function load() {
   if (inFlight) return;
   inFlight = true;
@@ -41,7 +36,7 @@ function load() {
       loadedAt = Date.now();
       set({
         status: "ready",
-        booked: (body.booked ?? []).map(toLocalDate),
+        booked: (body.booked ?? []).map(parseDay),
         blockBooked: !!body.blockBooked,
       });
     })

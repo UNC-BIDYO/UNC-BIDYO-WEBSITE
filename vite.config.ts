@@ -52,6 +52,9 @@ react(),
     resolve: {
       alias: {
         '@': path.resolve(__dirname, './src'),
+        // Server modules the front end shares (booking rules, types, site constants). Front end
+        // only: Vercel functions can't resolve aliases, so api/ keeps relative ".js" imports.
+        '@api': path.resolve(__dirname, './api/_lib'),
       },
     },
     server: {

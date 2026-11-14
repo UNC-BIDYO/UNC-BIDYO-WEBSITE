@@ -7,7 +7,8 @@ import {
   CardTitle,
 } from "@/shared/ui/primitives/card";
 import { Calendar } from "@/shared/ui/primitives/calendar";
-import { bookingDays, eventDates, isoDay, parseDay, StatusBadge, type Booking } from "../format";
+import { bookingDays, eventDates, isoDay, parseDay, type Booking } from "../format";
+import { StatusBadge } from "../StatusBadge";
 
 /* shadcn/ui Calendar with approved bookings marked (and pending ones outlined); picking a day
    lists what's on it. */

@@ -2,7 +2,7 @@ import { useState, type MouseEvent, type PointerEvent } from "react";
 import { requestBooking } from "@/features/booking/bookingIntent";
 import { useHydrated } from "@/shared/hooks/useHydrated";
 import { usePrefersReducedMotion } from "@/shared/hooks/usePrefersReducedMotion";
-import { cx } from "@/shared/lib/cx";
+import { cn } from "@/shared/lib/utils";
 import { ButtonLink } from "@/shared/ui/Button";
 import { Container } from "@/shared/ui/Container";
 import { ArrowIcon } from "@/shared/ui/icons";
@@ -101,7 +101,7 @@ function ServicePanel({
     <li
       onPointerEnter={(e) => e.pointerType === "mouse" && onHover()}
       onPointerMove={onPointerMove}
-      className={cx(
+      className={cn(
         "group relative isolate flex min-h-80 flex-col justify-end overflow-hidden bg-ink-2 md:min-h-0 md:basis-0",
         open ? "md:grow-[2.6]" : "md:grow",
         dimmed && "md:opacity-60",
@@ -117,7 +117,7 @@ function ServicePanel({
           alt=""
           loading="lazy"
           decoding="async"
-          className={cx(
+          className={cn(
             "absolute inset-0 -z-10 h-full w-full object-cover",
             open ? "scale-[1.06]" : "scale-100",
             "motion-safe:transition-transform motion-safe:duration-[1200ms]",
@@ -131,7 +131,7 @@ function ServicePanel({
       />
       <div
         aria-hidden
-        className={cx(
+        className={cn(
           "pointer-events-none absolute inset-0 -z-10 [background:radial-gradient(28rem_circle_at_var(--x,50%)_var(--y,70%),rgba(236,98,102,0.3),transparent_60%)]",
           open ? "opacity-100" : "opacity-0",
           "motion-safe:transition-opacity motion-safe:duration-500",
@@ -157,7 +157,7 @@ function ServicePanel({
             <span>{service.title}</span>
             <span
               aria-hidden
-              className={cx(
+              className={cn(
                 "mt-1 grid h-8 w-8 shrink-0 place-items-center border border-white/50 font-sans text-xl leading-none",
                 open && "rotate-45 border-accent-bright text-accent-bright",
                 "motion-safe:transition-transform motion-safe:duration-500",
@@ -174,7 +174,7 @@ function ServicePanel({
           id={detailsId}
           inert={hydrated && !open}
           data-noscript-open
-          className={cx(
+          className={cn(
             "grid motion-safe:transition-[grid-template-rows] motion-safe:duration-500",
             EASE,
             open ? "grid-rows-[1fr]" : "grid-rows-[0fr]",
@@ -187,7 +187,7 @@ function ServicePanel({
                   key={d}
                   data-noscript-show
                   style={{ transitionDelay: open ? `${150 + i * 70}ms` : "0ms" }}
-                  className={cx(
+                  className={cn(
                     "flex gap-3 text-sm text-white",
                     open ? "translate-y-0 opacity-100" : "translate-y-2 opacity-0",
                     "motion-safe:transition-[opacity,transform] motion-safe:duration-500",
@@ -203,7 +203,7 @@ function ServicePanel({
               onClick={() => requestBooking(service.title)}
               data-noscript-show
               style={{ transitionDelay: open ? `${150 + service.details.length * 70}ms` : "0ms" }}
-              className={cx(
+              className={cn(
                 "relative z-10 mt-6",
                 open ? "translate-y-0 opacity-100" : "translate-y-2 opacity-0",
                 "motion-safe:transition-[opacity,transform,background-color] motion-safe:duration-500",

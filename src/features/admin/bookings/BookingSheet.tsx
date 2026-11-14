@@ -34,7 +34,8 @@ import {
 } from "@/shared/ui/primitives/sheet";
 import { Textarea } from "@/shared/ui/primitives/textarea";
 import { decide, letterUrl, type DecideResult } from "../data";
-import { eventDates, fullName, StatusBadge, submittedAt, type Booking } from "../format";
+import { eventDates, fullName, submittedAt, type Booking } from "../format";
+import { StatusBadge } from "../StatusBadge";
 
 function Row({ label, children }: { label: string; children: ReactNode }) {
   return (

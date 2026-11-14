@@ -1,4 +1,4 @@
-import { cx } from "@/shared/lib/cx";
+import { cn } from "@/shared/lib/utils";
 
 type SectionHeadProps = {
   /** Reel-style index, e.g. "01". */
@@ -25,7 +25,7 @@ export function SectionHead({
   return (
     <div className="max-w-3xl">
       <p
-        className={cx(
+        className={cn(
           "font-mono text-xs font-medium uppercase tracking-[0.2em]",
           eyebrowTone[tone],
         )}
@@ -37,7 +37,7 @@ export function SectionHead({
         {title}
       </h2>
       {intro && (
-        <p className={cx("mt-5 max-w-xl text-lg leading-relaxed", introTone[tone])}>{intro}</p>
+        <p className={cn("mt-5 max-w-xl text-lg leading-relaxed", introTone[tone])}>{intro}</p>
       )}
     </div>
   );

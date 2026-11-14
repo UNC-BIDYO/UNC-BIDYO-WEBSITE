@@ -4,10 +4,7 @@
  */
 import { formatDates, fullName, type Booking } from "./booking.js";
 import { env, siteUrl } from "./env.js";
-
-/* Kept in sync with src/shared/lib/site.ts (functions don't import from the site bundle). */
-const CONTACT_EMAIL = "uncbidyoorg@gmail.com";
-const FACEBOOK_URL = "https://www.facebook.com/UNCBidyo";
+import { CONTACT_EMAIL, FACEBOOK_URL } from "./site.js";
 
 export type EmailKind =
   | "received"

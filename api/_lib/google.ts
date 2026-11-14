@@ -12,6 +12,7 @@
  */
 import { createSign } from "node:crypto";
 import { env, envState } from "./env.js";
+import { CONTACT_EMAIL } from "./site.js";
 
 export type GoogleConfig = { email: string; key: string; calendarId: string };
 
@@ -39,7 +40,7 @@ export function googleConfig(scope: string): GoogleConfig | null {
   }
   // Keys pasted into dashboards often keep literal "\n" escapes or surrounding quotes.
   key = key.replace(/^"|"$/g, "").replace(/\\n/g, "\n");
-  const calendarId = env("GOOGLE_CALENDAR_ID") || "uncbidyoorg@gmail.com";
+  const calendarId = env("GOOGLE_CALENDAR_ID") || CONTACT_EMAIL;
   if (email && key.includes("PRIVATE KEY")) return { email, key, calendarId };
   console.error(
     `${scope}: Google Calendar not configured (VERCEL_ENV=${process.env.VERCEL_ENV ?? "?"}): ` +

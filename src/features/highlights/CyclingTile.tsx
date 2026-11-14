@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { cx } from "@/shared/lib/cx";
+import { cn } from "@/shared/lib/utils";
 import type { Photo } from "./photos";
 
 type CyclingTileProps = {
@@ -51,7 +51,7 @@ export function CyclingTile({
     // non-interactive. Motion already stops entirely with prefers-reduced-motion.
     // oxlint-disable-next-line jsx-a11y/no-noninteractive-element-interactions
     <figure
-      className={cx("relative overflow-hidden bg-ink", className)}
+      className={cn("relative overflow-hidden bg-ink", className)}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
@@ -67,7 +67,7 @@ export function CyclingTile({
             loading="lazy"
             decoding="async"
             onLoad={n === 0 ? () => setFirstLoaded(true) : undefined}
-            className={cx(
+            className={cn(
               "absolute inset-0 h-full w-full object-cover transition-opacity duration-[1600ms] ease-in-out",
               n === i ? "opacity-100" : "opacity-0",
             )}
