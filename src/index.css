@@ -1,4 +1,10 @@
 @import "tailwindcss";
+/* The admin panel (/admin) has its own stylesheet; keep its classes out of the site's CSS. */
+@source not "./admin";
+@source not "./features/admin";
+/* shadcn/ui primitives only the admin panel uses. */
+@source not "./shared/ui/primitives/{alert,alert-dialog,avatar,badge,breadcrumb,card,chart,dialog,dropdown-menu,sheet,sidebar,skeleton,sonner,switch,table,tabs,toggle,toggle-group,tooltip}.tsx";
+@source not "./shared/hooks/use-mobile.ts";
 /* Self-hosted fonts (Fontsource, bundled into dist/assets): latin subset and only the weights
    the site uses. No requests to Google. scripts/build.mjs preloads the Anton file, because
    the hero headline (the LCP element) is set in it. */
