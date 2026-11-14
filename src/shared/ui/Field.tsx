@@ -180,7 +180,8 @@ export function TextAreaField({
   );
 }
 
-/** File picker; the browse button is styled like a small outline Button. */
+/** File picker in the shadcn/ui `<Input type="file" />` format (its own file-button styling),
+    sized like the other controls. */
 export function FileField({
   label,
   hint,
@@ -195,10 +196,7 @@ export function FileField({
         <Input
           {...control}
           type="file"
-          className={cn(
-            "h-auto cursor-pointer px-3 py-2 text-base md:text-base",
-            "file:mr-4 file:h-9 file:cursor-pointer file:border file:border-input file:px-4 file:text-xs file:font-semibold file:tracking-[0.12em] file:uppercase file:transition-colors hover:file:bg-foreground hover:file:text-background",
-          )}
+          className={cn(controlSize, "cursor-pointer py-0 leading-[3rem] file:mr-3 file:h-full")}
           {...input}
         />
       )}
