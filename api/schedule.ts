@@ -6,8 +6,9 @@
  *   503 { error }  Google Calendar isn't configured
  *   502 { error }  Google Calendar couldn't be read
  *
- * Cached at Vercel's edge for 15 minutes (and served stale for up to an hour while refreshing),
- * so Google is asked at most a few times an hour however many people visit.
+ * Cached at Vercel's edge for 1 minute (plus up to 1 more while refreshing), so new events show
+ * up within about two minutes, while Google is asked at most about once a minute however many
+ * people visit (far inside the Calendar API's free quota).
  */
 import { todayInManila } from "./_lib/booking.js";
 import { addDays, busyDays, googleConfig, listEvents, manilaMidnight } from "./_lib/google.js";
@@ -45,7 +46,7 @@ export async function GET(): Promise<Response> {
     const booked = busyDays(events).filter((d) => d >= from && d <= to);
     return Response.json(
       { booked, from, to, blockBooked },
-      { headers: { "Cache-Control": "public, s-maxage=900, stale-while-revalidate=3600" } },
+      { headers: { "Cache-Control": "public, s-maxage=60, stale-while-revalidate=60" } },
     );
   } catch (e) {
     console.error("schedule: reading Google Calendar failed:", (e as Error).message);
