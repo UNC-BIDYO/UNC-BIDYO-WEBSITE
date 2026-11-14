@@ -9,7 +9,7 @@ export function Faq() {
   return (
     <section className="pb-section" aria-labelledby="faq-title">
       <Container className="grid gap-10 lg:grid-cols-[minmax(0,4fr)_minmax(0,8fr)]">
-        <SectionHead id="faq-title" index="05" eyebrow="FAQ" title="Before you book" />
+        <SectionHead id="faq-title" index="06" eyebrow="FAQ" title="Before you book" />
         <div className="border-t border-line-strong">
           {faqs.map((f) => (
             <details key={f.question} className="group border-b border-line-strong">

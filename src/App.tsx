@@ -3,6 +3,7 @@ import { Booking } from "@/features/booking/Booking";
 import { Faq } from "@/features/faq/Faq";
 import { Hero } from "@/features/hero/Hero";
 import { Highlights } from "@/features/highlights/Highlights";
+import { Schedule } from "@/features/schedule/Schedule";
 import { Services } from "@/features/services/Services";
 import { SiteFooter } from "@/features/site-footer/SiteFooter";
 import { Team } from "@/features/team/Team";
@@ -22,6 +23,7 @@ export default function App() {
         <Highlights />
         <About />
         <Team />
+        <Schedule />
         <Faq />
         <Booking />
       </main>

@@ -19,6 +19,7 @@ import {
 import { ArrowIcon } from "@/shared/ui/icons";
 import { NativeSelectOption } from "@/shared/ui/primitives/native-select";
 import { SectionHead } from "@/shared/ui/SectionHead";
+import { useSchedule } from "@/features/schedule/useSchedule";
 import { useRequestedService } from "./bookingIntent";
 
 /** Vercel function in api/book.ts: saves to Supabase and emails Bidyo. */
@@ -50,7 +51,7 @@ export function Booking() {
         <div>
           <SectionHead
             id="book-title"
-            index="06"
+            index="07"
             eyebrow="Book us"
             title="Tell us about your event"
             intro="Send the details and we'll reply by email to confirm coverage."
@@ -94,6 +95,12 @@ function BookingForm() {
 
   const [multiDay, setMultiDay] = useState(false);
   const [dates, setDates] = useState<DateRangeValue>({});
+
+  // Booked days from Bidyo's calendar: struck through in the picker, and not selectable when
+  // the admin turns on the overlap check (blockBooked).
+  const schedule = useSchedule();
+  const booked = schedule.status === "ready" ? schedule.booked : [];
+  const blockBooked = schedule.status === "ready" && schedule.blockBooked;
 
   useEffect(() => {
     if (status === "sent" || status === "error") statusRef.current?.focus();
@@ -293,7 +300,17 @@ function BookingForm() {
                 mode={multiDay ? "range" : "single"}
                 value={dates}
                 onChange={setDates}
-                disabled={{ before: startOfToday() }}
+                disabled={
+                  blockBooked ? [{ before: startOfToday() }, ...booked] : { before: startOfToday() }
+                }
+                marked={booked}
+                hint={
+                  booked.length
+                    ? blockBooked
+                      ? "Booked days can't be selected."
+                      : "Struck-through days are already booked."
+                    : undefined
+                }
                 placeholder={multiDay ? "Pick the first and last day" : "Pick a date"}
                 error={errors.start_date ?? errors.end_date}
                 className="sm:col-span-2"
