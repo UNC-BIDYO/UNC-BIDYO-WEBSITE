@@ -18,7 +18,15 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "check": "pnpm typecheck && pnpm lint && pnpm format:check && pnpm test"
+    "check": "pnpm typecheck && pnpm lint && pnpm format:check && pnpm test",
+    "prepare": "husky"
+  },
+  "lint-staged": {
+    "{src,api,scripts,tests}/**/*.{ts,tsx,js,mjs}": [
+      "oxlint --fix",
+      "oxfmt"
+    ],
+    "{src,api,scripts,tests}/**/*.css": "oxfmt"
   },
   "dependencies": {
     "@fontsource/anton": "^5.3.0",
@@ -47,6 +55,8 @@
     "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^6.2.1",
     "@vitest/coverage-v8": "^5.1.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^17.6.0",
     "oxfmt": "^0.77.0",
     "oxlint": "^1.93.0",
     "tailwindcss": "^4.3.4",
