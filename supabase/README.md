@@ -66,6 +66,8 @@ In the Vercel project (**uncbidyo**), open **Settings → Environment Variables*
 | `ADMIN_EMAILS` | `uncbidyoorg@gmail.com` (who can use the admin panel; separate several with commas) |
 | `VITE_SUPABASE_URL` | the Project URL again (the admin panel's sign-in uses it) |
 | `VITE_SUPABASE_PUBLISHABLE_KEY` | Supabase → Project Settings → API Keys → **publishable** key (`sb_publishable_…`). Safe to be public. |
+| `VITE_TURNSTILE_SITE_KEY` | optional; the Cloudflare Turnstile site key (bot check on the form; see the root README) |
+| `TURNSTILE_SECRET_KEY` | optional; the Turnstile secret key (turns the check on) |
 | `SITE_URL` | optional; defaults to `https://uncbidyo.org` (used for links and the logo in emails) |
 
 Instead of the two `GOOGLE_SERVICE_ACCOUNT_EMAIL` / `GOOGLE_PRIVATE_KEY` variables, you can set `GOOGLE_SERVICE_ACCOUNT_JSON` to the whole JSON key file.

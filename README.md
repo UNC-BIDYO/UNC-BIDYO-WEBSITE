@@ -49,3 +49,28 @@ The pre-commit hook (husky + lint-staged) lints and formats the staged files. CI
 - React components: `PascalCase.tsx`, one component per file.
 - Hooks: `useThing.ts`.
 - Other modules: `camelCase.ts`.
+
+## Booking-form protection
+
+The public form emails the address typed into it, so it's protected against abuse:
+
+- **Per-address limit:** at most 3 requests per email address per hour. Always on.
+- **Cloudflare Turnstile:** a free, mostly invisible bot check. Off until you add its keys:
+  1. In the [Cloudflare dashboard](https://dash.cloudflare.com/) → **Turnstile → Add widget**, add the domains `uncbidyo.org` and `uncbidyo.vercel.app`, with mode **Managed**.
+  2. In Vercel (Production + Preview), add `VITE_TURNSTILE_SITE_KEY` (the site key) and `TURNSTILE_SECRET_KEY` (the secret key), then redeploy.
+
+  With the secret set, requests without a valid token are rejected, so the form then needs JavaScript. Visitors without it are shown the contact email instead.
+
+## SonarCloud
+
+`sonar-project.properties` and the last CI step run [SonarCloud](https://sonarcloud.io) analysis, which is free for public repos. To turn it on:
+
+1. Sign in to sonarcloud.io with GitHub, then **+ → Analyze new project**. Import `UNC-BIDYO/UNC-BIDYO-WEBSITE` into an organization with the key `unc-bidyo` (or change `sonar.organization` and `sonar.projectKey` to match).
+2. In the project, go to **Administration → Analysis Method** and turn **off** Automatic Analysis, so CI can upload test coverage.
+3. Go to **My Account → Security → Generate token**, then add it to GitHub under **Settings → Secrets and variables → Actions → New repository secret**, named `SONAR_TOKEN`.
+
+The next CI run then reports to SonarCloud. Suggested quality gate, applied to new code ("Sonar way"):
+- no new bugs or vulnerabilities;
+- all security hotspots reviewed;
+- duplication ≤ 3%;
+- coverage ≥ 80%.

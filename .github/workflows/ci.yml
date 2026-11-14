@@ -18,12 +18,17 @@ jobs:
     name: Type-check, format, build
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    env:
+      # Empty until the repository secret exists; the SonarCloud step is skipped without it.
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
     steps:
       # Images and video are stored in Git LFS (.gitattributes). Without lfs: true the
       # runner gets pointer files, and vite-imagetools fails to decode them.
       - uses: actions/checkout@v7
         with:
           lfs: true
+          # Full history lets SonarCloud tell new code from old.
+          fetch-depth: 0
 
       # Versions match .mise.toml.
       - uses: pnpm/action-setup@v6
@@ -59,3 +64,10 @@ jobs:
 
       - name: Build
         run: pnpm build
+
+      # Code quality and coverage (sonar-project.properties). Runs once SONAR_TOKEN is set.
+      - name: SonarCloud scan
+        if: env.SONAR_TOKEN != ''
+        uses: SonarSource/sonarqube-scan-action@v5
+        env:
+          SONAR_HOST_URL: https://sonarcloud.io
