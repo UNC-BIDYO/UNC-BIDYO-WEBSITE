@@ -34,10 +34,12 @@ const base = (over) => ({
   mobile: "0917 123 4567",
   organization: "SCIS",
   event_title: "Intramurals",
-  service: "Event Coverage",
+  services: ["Event Coverage", "Video Production"],
   start_date: "2026-12-05",
   end_date: "2026-12-07",
   venue: "Gym",
+  photographers: 2,
+  videographers: 1,
   shooters: 3,
   requests: null,
   letter_path: "2026-11/abc-letter.pdf",
@@ -191,6 +193,8 @@ it("approve: status, decided_by, calendar event (all-day, exclusive end), confir
   assert.deepEqual(events[0].end, { date: "2026-12-08" });
   assert.equal(events[0].summary, "[Bidyo] Intramurals (SCIS)");
   assert.match(events[0].description, /Reference #: b1/);
+  assert.match(events[0].description, /Event Coverage, Video Production/);
+  assert.match(events[0].description, /Crew: 2 photographers, 1 videographer/);
   assert.equal(mails.length, 1);
   assert.deepEqual(mails[0].to, ["juan@unc.edu.ph"]);
   assert.equal(mails[0].subject, "Your booking is confirmed: Intramurals");

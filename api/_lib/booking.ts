@@ -9,14 +9,18 @@ export type Fields = {
   mobile: string;
   organization: string;
   event_title: string;
-  service: string;
+  /** One or more of BOOKING_RULES.services. */
+  services: string[];
   start_date: string;
   end_date: string | null;
   venue: string;
+  photographers: number;
+  videographers: number;
+  /** photographers + videographers (kept for sorting and older views). */
   shooters: number;
   requests: string | null;
 };
-export type Errors = Partial<Record<keyof Fields | "letter", string>>;
+export type Errors = Partial<Record<keyof Fields | "letter" | "crew", string>>;
 export type Letter = { name: string; type: string; file: Blob };
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -57,7 +61,6 @@ export function validate(
   }
   const organization = required("organization", "Enter your organization.");
   const event_title = required("event_title", "Enter the activity or event title.");
-  const service = required("service", "Choose a service.");
   const venue = required("venue", "Enter the event place.");
 
   const today = todayInManila();
@@ -74,11 +77,33 @@ export function validate(
     }
   }
 
-  const shootersRaw = text(form, "shooters");
-  const shooters = Number(shootersRaw);
-  const { min, max: most } = BOOKING_RULES.shooters;
-  if (!shootersRaw || !Number.isInteger(shooters) || shooters < min || shooters > most) {
-    errors.shooters = `Enter a number from ${min} to ${most}.`;
+  // Services: any number of the allowed ones (checkboxes post one value each).
+  const services = [
+    ...new Set(
+      form
+        .getAll("services")
+        .map((v) => (typeof v === "string" ? v.trim() : ""))
+        .filter((v) => BOOKING_RULES.services.includes(v)),
+    ),
+  ];
+  if (services.length === 0) errors.services = "Choose at least one service.";
+
+  // Crew per role; an empty field means none of that role.
+  const { min, max: most, minTotal } = BOOKING_RULES.crew;
+  const count = (key: "photographers" | "videographers") => {
+    const raw = text(form, key);
+    const n = raw === "" ? 0 : Number(raw);
+    if (!Number.isInteger(n) || n < min || n > most) {
+      errors[key] = `Enter a number from ${min} to ${most}.`;
+      return 0;
+    }
+    return n;
+  };
+  const photographers = count("photographers");
+  const videographers = count("videographers");
+  const shooters = photographers + videographers;
+  if (!errors.photographers && !errors.videographers && shooters < minTotal) {
+    errors.crew = "Ask for at least one photographer or videographer.";
   }
 
   const requests = text(form, "requests");
@@ -107,10 +132,12 @@ export function validate(
       mobile,
       organization,
       event_title,
-      service,
+      services,
       start_date,
       end_date,
       venue,
+      photographers,
+      videographers,
       shooters,
       requests: requests || null,
     },
@@ -161,3 +188,14 @@ export const safeFileName = (name: string) =>
     .replace(/[^\w.-]+/g, "-")
     .replace(/-+/g, "-")
     .slice(-80) || "letter";
+
+/** "Event Coverage, Video Production". */
+export const formatServices = (b: Pick<Fields, "services">) => b.services.join(", ");
+
+/** "2 photographers, 1 videographer" (roles with nobody are left out). */
+export function formatCrew(b: Pick<Fields, "photographers" | "videographers">) {
+  const part = (n: number, role: string) => (n ? `${n} ${role}${n === 1 ? "" : "s"}` : "");
+  return [part(b.photographers, "photographer"), part(b.videographers, "videographer")]
+    .filter(Boolean)
+    .join(", ");
+}

@@ -9,14 +9,17 @@ export const BOOKING_RULES = {
     mobile: 20,
     organization: 150,
     event_title: 150,
-    service: 60,
     venue: 200,
     requests: 2000,
   },
   /** Philippine mobile: 09XX XXX XXXX or +63 9XX XXX XXXX, spaces/dashes allowed. Also used as
       the input's HTML `pattern`, which browsers compile with the `v` flag, so `-` is escaped. */
   mobilePattern: "(\\+63|0)[\\s\\-]?9\\d{2}[\\s\\-]?\\d{3}[\\s\\-]?\\d{4}",
-  shooters: { min: 1, max: 10 },
+  /** Services a booking can ask for (one or more). The first three match the service cards in
+      src/features/services/serviceList.ts; a test keeps them in sync. */
+  services: ["Event Coverage", "Photoshoots", "Video Production", "Other"] as readonly string[],
+  /** Crew per role (photographers, videographers): each 0–10, at least one person in total. */
+  crew: { min: 0, max: 10, minTotal: 1 },
   /** Vercel rejects requests over 4.5 MB, so the letter stays under that with the other fields. */
   letterMaxBytes: 4 * 1024 * 1024,
   letterTypes: {

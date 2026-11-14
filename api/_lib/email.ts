@@ -2,7 +2,7 @@
  * Booking emails: one responsive, inline-styled template (tables, no external CSS, so Gmail,
  * Outlook and phone apps render it the same), in five variants, plus sending through Resend.
  */
-import { formatDates, fullName, type Booking } from "./booking.js";
+import { formatCrew, formatDates, formatServices, fullName, type Booking } from "./booking.js";
 import { env, siteUrl } from "./env.js";
 import { CONTACT_EMAIL, FACEBOOK_URL } from "./site.js";
 
@@ -164,11 +164,11 @@ export const escapeHtml = (s: string) =>
 function detailRows(b: Booking, showContact: boolean, letterName: string | null) {
   const rows: [string, string][] = [
     ["Event", b.event_title],
-    ["Service", b.service],
+    [b.services.length > 1 ? "Services" : "Service", formatServices(b)],
     ["Organization", b.organization],
     [b.end_date ? "Dates" : "Date", formatDates(b)],
     ["Place", b.venue],
-    ["Shooters", String(b.shooters)],
+    ["Crew", formatCrew(b)],
   ];
   if (showContact) {
     rows.unshift(["Name", fullName(b)], ["Email", b.email], ["Mobile", b.mobile]);

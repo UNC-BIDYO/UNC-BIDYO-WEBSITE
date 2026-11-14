@@ -78,10 +78,10 @@ function form(over = {}) {
     mobile: "09171234567",
     organization: "SCIS",
     event_title: "Intramurals",
-    service: "Event Coverage",
+    services: "Event Coverage",
     start_date: future(10),
     venue: "Gym",
-    shooters: "2",
+    photographers: "2",
     _gotcha: "",
     ...over,
   }))
