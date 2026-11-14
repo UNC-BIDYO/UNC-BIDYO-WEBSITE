@@ -9,6 +9,7 @@ The booking system runs as Vercel functions in `api/`, with shared code in `api/
   4. Emails the person who booked a summary ("We received your booking request"), from the no-reply address.
   5. Emails Bidyo a copy, with the letter attached and reply-to set to the person who booked.
 - **`/api/schedule`** (the "Booked days" section and the date picker): reads Bidyo's Google Calendar and returns **only the dates** that are booked. It never returns titles, times, places or guests.
+- **`/api/admin/*`** (the admin panel at `/admin`): lists bookings, approves (adding the event to Google Calendar and emailing the requester), disapproves (emailing the reason), and saves settings. Every call checks the signed-in Supabase user against `ADMIN_EMAILS`.
 
 Without the Supabase keys, the form shows "Booking is temporarily unavailable" with the email address. Without the Google keys, the schedule shows "unavailable", and booking still works.
 
@@ -62,6 +63,9 @@ In the Vercel project (**uncbidyo**), open **Settings → Environment Variables*
 | `GOOGLE_SERVICE_ACCOUNT_EMAIL` | `client_email` from the JSON key file |
 | `GOOGLE_PRIVATE_KEY` | `private_key` from the JSON key file, pasted exactly as it appears there (it starts with `-----BEGIN PRIVATE KEY-----`; the `\n` parts are fine) |
 | `GOOGLE_CALENDAR_ID` | `uncbidyoorg@gmail.com` |
+| `ADMIN_EMAILS` | `uncbidyoorg@gmail.com` (who can use the admin panel; separate several with commas) |
+| `VITE_SUPABASE_URL` | the Project URL again (the admin panel's sign-in uses it) |
+| `VITE_SUPABASE_PUBLISHABLE_KEY` | Supabase → Project Settings → API Keys → **publishable** key (`sb_publishable_…`). Safe to be public. |
 | `SITE_URL` | optional; defaults to `https://uncbidyo.org` (used for links and the logo in emails) |
 
 Instead of the two `GOOGLE_SERVICE_ACCOUNT_EMAIL` / `GOOGLE_PRIVATE_KEY` variables, you can set `GOOGLE_SERVICE_ACCOUNT_JSON` to the whole JSON key file.
@@ -71,3 +75,13 @@ Redeploy after adding or changing variables, because they only apply to new depl
 ## 5. GitHub secrets (keep-alive)
 
 In the repo, open **Settings → Secrets and variables → Actions → New repository secret**, and add `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` with the same values as above.
+
+## 6. Admin panel (`/admin`)
+
+1. Run [`migrations/2026-11-15-admin.sql`](migrations/2026-11-15-admin.sql) in the SQL Editor (statuses become pending / approved / declined, and the `settings` table is added).
+2. In Supabase, open **Authentication → Sign In / Providers** and turn off **Allow new users to sign up**.
+3. Open **Authentication → Users → Add user → Create new user**: email `uncbidyoorg@gmail.com`, a strong password, and tick **Auto Confirm User**.
+4. Add `ADMIN_EMAILS`, `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` in Vercel (step 4), then redeploy. The `VITE_` variables are built into the admin page, so a redeploy is required after changing them.
+5. Open `https://<your site>/admin` and sign in.
+
+Only accounts listed in `ADMIN_EMAILS` can open the panel, even if other users exist in Supabase.

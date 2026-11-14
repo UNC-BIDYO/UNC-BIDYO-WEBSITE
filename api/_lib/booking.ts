@@ -120,11 +120,19 @@ export function validate(
 }
 
 /** A saved booking row (what Supabase returns). */
+export type BookingStatus = "pending" | "approved" | "declined";
+
 export type Booking = Fields & {
   id: string;
   created_at?: string;
-  status?: string;
+  status?: BookingStatus;
   letter_path: string | null;
+  decided_at?: string | null;
+  decided_by?: string | null;
+  decision_reason?: string | null;
+  auto_declined?: boolean;
+  calendar_event_id?: string | null;
+  calendar_sync_error?: string | null;
 };
 
 export const fullName = (f: Pick<Fields, "first_name" | "middle_name" | "last_name">) =>

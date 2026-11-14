@@ -19,6 +19,12 @@ export default defineConfig(({ mode }) => {
       sourcemap: emitSourcemaps ? 'inline' : false,
       minify: !emitSourcemaps,
       rolldownOptions: {
+        // Two pages: the public site (prerendered by scripts/build.mjs) and the admin panel
+        // (/admin, client-only). Each gets its own bundle, so admin code never ships to visitors.
+        input: {
+          main: path.resolve(__dirname, 'index.html'),
+          admin: path.resolve(__dirname, 'admin.html'),
+        },
         output: {
           // Images are named by content hash only. Identical images imported under two names
           // (e.g. a photo used in Highlights and Services) are written once, named after
