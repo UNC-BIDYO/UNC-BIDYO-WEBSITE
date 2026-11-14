@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import { BOOKING_RULES } from "../../../api/book";
+import { BOOKING_RULES } from "../../../api/_lib/rules";
 import { services } from "@/features/services/serviceList";
 import { useHydrated } from "@/shared/hooks/useHydrated";
 import { CONTACT_EMAIL, mailto } from "@/shared/lib/site";
