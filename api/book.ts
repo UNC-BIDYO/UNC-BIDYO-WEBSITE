@@ -23,6 +23,7 @@ import {
   sendEmail,
 } from "./_lib/email.js";
 import { addDays, freeBusy, googleConfig, manilaMidnight } from "./_lib/google.js";
+import { CONTACT_EMAIL } from "./_lib/site.js";
 import {
   getSetting,
   insertBooking,
@@ -110,7 +111,7 @@ export async function POST(request: Request): Promise<Response> {
   if (!db) {
     return reply(503, {
       ok: false,
-      message: "Booking is temporarily unavailable. Please email uncbidyoorg@gmail.com.",
+      message: `Booking is temporarily unavailable. Please email ${CONTACT_EMAIL}.`,
     });
   }
 
@@ -158,7 +159,7 @@ export async function POST(request: Request): Promise<Response> {
     console.error("book: saving failed", e);
     return reply(502, {
       ok: false,
-      message: "We couldn't save your request. Please try again, or email uncbidyoorg@gmail.com.",
+      message: `We couldn't save your request. Please try again, or email ${CONTACT_EMAIL}.`,
     });
   }
 

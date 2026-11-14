@@ -1,0 +1,13 @@
+{
+  "$schema": "https://unpkg.com/knip@5/schema.json",
+  "entry": [
+    "src/entry-server.tsx",
+    "api/*.ts",
+    "api/admin/*.ts",
+    "scripts/*.mjs",
+    "tests/**/*.test.{js,ts}"
+  ],
+  "project": ["src/**/*.{ts,tsx}", "api/**/*.ts", "scripts/**/*.mjs", "tests/**/*.{js,ts}"],
+  "ignore": ["src/shared/ui/primitives/**"],
+  "ignoreDependencies": ["tw-animate-css", "tailwindcss", "@fontsource/*"]
+}

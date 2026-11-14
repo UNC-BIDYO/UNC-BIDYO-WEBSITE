@@ -12,10 +12,11 @@
  */
 import { createSign } from "node:crypto";
 import { env, envState } from "./env.js";
+import { CONTACT_EMAIL } from "./site.js";
 
 export type GoogleConfig = { email: string; key: string; calendarId: string };
 
-export class GoogleError extends Error {
+class GoogleError extends Error {
   readonly status: number;
   constructor(message: string, status: number) {
     super(message);
@@ -39,7 +40,7 @@ export function googleConfig(scope: string): GoogleConfig | null {
   }
   // Keys pasted into dashboards often keep literal "\n" escapes or surrounding quotes.
   key = key.replace(/^"|"$/g, "").replace(/\\n/g, "\n");
-  const calendarId = env("GOOGLE_CALENDAR_ID") || "uncbidyoorg@gmail.com";
+  const calendarId = env("GOOGLE_CALENDAR_ID") || CONTACT_EMAIL;
   if (email && key.includes("PRIVATE KEY")) return { email, key, calendarId };
   console.error(
     `${scope}: Google Calendar not configured (VERCEL_ENV=${process.env.VERCEL_ENV ?? "?"}): ` +
@@ -126,7 +127,7 @@ async function calendarApi<T>(c: GoogleConfig, path: string, init: RequestInit =
   return (await res.json()) as T;
 }
 
-export type CalendarEventTime = { date?: string; dateTime?: string; timeZone?: string };
+type CalendarEventTime = { date?: string; dateTime?: string; timeZone?: string };
 export type CalendarEvent = {
   id?: string;
   status?: string;
@@ -205,11 +206,11 @@ export async function insertEvent(
 
 /* ---------- Dates in Asia/Manila ---------- */
 
-export const MANILA = "Asia/Manila";
+const MANILA = "Asia/Manila";
 
 const manilaDay = new Intl.DateTimeFormat("en-CA", { timeZone: MANILA });
 /** YYYY-MM-DD of an instant, in Manila time. */
-export const toManilaDate = (instant: Date) => manilaDay.format(instant);
+const toManilaDate = (instant: Date) => manilaDay.format(instant);
 
 /** YYYY-MM-DD plus n days (calendar arithmetic, no time zones involved). */
 export function addDays(iso: string, n: number) {
@@ -222,7 +223,7 @@ export function addDays(iso: string, n: number) {
 export const manilaMidnight = (iso: string) => `${iso}T00:00:00+08:00`;
 
 /** Every Manila calendar day an event touches. All-day end dates are exclusive. */
-export function eventDays(e: CalendarEvent): string[] {
+function eventDays(e: CalendarEvent): string[] {
   let first: string;
   let last: string;
   if (e.start.date && e.end.date) {

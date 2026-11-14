@@ -32,14 +32,8 @@ import {
 } from "@/shared/ui/primitives/table";
 import { Tabs, TabsList, TabsTrigger } from "@/shared/ui/primitives/tabs";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/shared/ui/primitives/tooltip";
-import {
-  eventDates,
-  fullName,
-  StatusBadge,
-  submittedAt,
-  type Booking,
-  type BookingStatus,
-} from "../format";
+import { eventDates, fullName, submittedAt, type Booking, type BookingStatus } from "../format";
+import { StatusBadge } from "../StatusBadge";
 
 type Tab = BookingStatus | "all";
 

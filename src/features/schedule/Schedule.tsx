@@ -1,11 +1,10 @@
 import { lazy, Suspense } from "react";
+import { FACEBOOK_URL } from "@/shared/lib/site";
 import { Container } from "@/shared/ui/Container";
 import { SectionHead } from "@/shared/ui/SectionHead";
 import { useSchedule } from "./useSchedule";
 
 const ScheduleCalendar = lazy(() => import("./ScheduleCalendar"));
-
-const FACEBOOK_URL = "https://www.facebook.com/UNCBidyo";
 
 const spoken = new Intl.DateTimeFormat("en-PH", {
   weekday: "long",

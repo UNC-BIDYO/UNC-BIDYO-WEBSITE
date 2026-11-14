@@ -1,7 +1,7 @@
 import colorLogo from "@/shared/assets/brand/bidyo-logo-color.png";
 import whiteLogo from "@/shared/assets/brand/bidyo-logo-white.png";
 import { BRAND } from "@/shared/lib/site";
-import { cx } from "@/shared/lib/cx";
+import { cn } from "@/shared/lib/utils";
 
 /* Intrinsic sizes of the cropped artwork, so the browser reserves space (no layout shift). */
 const logos = {
@@ -26,7 +26,7 @@ export function Logo({ variant = "color", className }: LogoProps) {
       height={height}
       alt={BRAND}
       decoding="async"
-      className={cx("w-auto", className)}
+      className={cn("w-auto", className)}
     />
   );
 }

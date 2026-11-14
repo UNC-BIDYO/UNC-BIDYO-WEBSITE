@@ -39,11 +39,23 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Type-check
-        run: pnpm exec tsc --noEmit -p .
+        run: pnpm typecheck
 
-      # Only src/ is checked: the root config files are generated and managed by Figma Make.
+      # oxlint (.oxlintrc.json): errors fail the build; warnings are reported only.
+      - name: Lint
+        run: pnpm lint
+
+      # Unused files, exports and dependencies (knip.json).
+      - name: Dead code
+        run: pnpm knip
+
+      # API, email, Google Calendar, admin and overlap-check tests (tests/), external services stubbed.
+      - name: Test
+        run: pnpm test:coverage
+
+      # src, api, scripts and tests; the root config files are generated and managed by Figma Make.
       - name: Check formatting
-        run: pnpm exec oxfmt --check src
+        run: pnpm format:check
 
       - name: Build
         run: pnpm build

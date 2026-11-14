@@ -2,6 +2,7 @@
 import { addDays, googleConfig, insertEvent } from "./google.js";
 import { formatDates, fullName, type Booking } from "./booking.js";
 import { env } from "./env.js";
+import { CONTACT_EMAIL } from "./site.js";
 import {
   supabaseConfig,
   updateBooking,
@@ -14,7 +15,7 @@ export const json = (status: number, body: unknown) =>
 
 /** Admin emails from ADMIN_EMAILS (comma-separated); defaults to Bidyo's own account. */
 const adminEmails = () =>
-  (env("ADMIN_EMAILS") || "uncbidyoorg@gmail.com")
+  (env("ADMIN_EMAILS") || CONTACT_EMAIL)
     .split(",")
     .map((s) => s.trim().toLowerCase())
     .filter(Boolean);

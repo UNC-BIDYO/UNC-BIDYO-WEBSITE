@@ -1,5 +1,5 @@
 import type { ComponentPropsWithoutRef } from "react";
-import { cx } from "@/shared/lib/cx";
+import { cn } from "@/shared/lib/utils";
 
 /* Design tokens for actions, exposed as a typed variant API.
    Square corners and tracked caps follow the cinematic/slate direction. */
@@ -26,19 +26,19 @@ const sizes = {
   "icon-sm": "h-11 w-11",
 } as const;
 
-export type ButtonVariant = keyof typeof variants;
-export type ButtonSize = keyof typeof sizes;
+type ButtonVariant = keyof typeof variants;
+type ButtonSize = keyof typeof sizes;
 
 type StyleProps = { variant?: ButtonVariant; size?: ButtonSize };
 
-export const buttonStyles = ({ variant = "primary", size = "md" }: StyleProps = {}) =>
-  cx(base, variants[variant], sizes[size]);
+const buttonStyles = ({ variant = "primary", size = "md" }: StyleProps = {}) =>
+  cn(base, variants[variant], sizes[size]);
 
 type ButtonProps = ComponentPropsWithoutRef<"button"> & StyleProps;
 
 export function Button({ variant, size, className, type = "button", ...rest }: ButtonProps) {
   return (
-    <button type={type} className={cx(buttonStyles({ variant, size }), className)} {...rest} />
+    <button type={type} className={cn(buttonStyles({ variant, size }), className)} {...rest} />
   );
 }
 
@@ -46,5 +46,7 @@ type ButtonLinkProps = ComponentPropsWithoutRef<"a"> & StyleProps;
 
 /** A link that looks like a button (navigation, mailto). */
 export function ButtonLink({ variant, size, className, ...rest }: ButtonLinkProps) {
-  return <a className={cx(buttonStyles({ variant, size }), className)} {...rest} />;
+  // The link text arrives through `children` in {...rest}, which the rule can't see.
+  // oxlint-disable-next-line jsx-a11y/anchor-has-content
+  return <a className={cn(buttonStyles({ variant, size }), className)} {...rest} />;
 }

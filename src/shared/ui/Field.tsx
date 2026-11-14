@@ -26,7 +26,7 @@ const controlSize = "h-12 px-4 text-base md:text-base";
 const labelStyle = "font-mono text-xs font-medium uppercase tracking-[0.16em]";
 
 /** Red asterisk for required fields; hidden from screen readers, which announce "required". */
-export function RequiredMark() {
+function RequiredMark() {
   return (
     <span aria-hidden className="text-destructive">
       *

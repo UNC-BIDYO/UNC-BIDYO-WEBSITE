@@ -18,7 +18,7 @@ export function supabaseConfig(scope: string): SupabaseConfig | null {
 }
 
 /** Secret keys (sb_secret_…) go in `apikey` only; legacy service-role JWTs also as a Bearer token. */
-export function supabaseHeaders(key: string): Record<string, string> {
+function supabaseHeaders(key: string): Record<string, string> {
   return key.startsWith("eyJ") ? { apikey: key, Authorization: `Bearer ${key}` } : { apikey: key };
 }
 

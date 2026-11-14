@@ -1,4 +1,4 @@
-import { cx } from "@/shared/lib/cx";
+import { cn } from "@/shared/lib/utils";
 import type { Member } from "./members";
 import { portraitsFor } from "./portraits";
 
@@ -28,7 +28,7 @@ export function MemberCard({ member, index, current }: MemberCardProps) {
   const { main, hover } = portraitsFor(member.photo);
   const number = String(index + 1).padStart(2, "0");
   // The second portrait shows on hover (mouse), and on the current slide for touch screens.
-  const showHover = cx("group-hover:opacity-100", current && "[@media(hover:none)]:opacity-100");
+  const showHover = cn("group-hover:opacity-100", current && "[@media(hover:none)]:opacity-100");
   const fade = "motion-safe:transition-opacity motion-safe:duration-500";
 
   return (
@@ -57,7 +57,7 @@ export function MemberCard({ member, index, current }: MemberCardProps) {
               loading="lazy"
               decoding="async"
               draggable={false}
-              className={cx(
+              className={cn(
                 portraitFit,
                 hover && fade,
                 hover && "group-hover:opacity-0",
@@ -73,7 +73,7 @@ export function MemberCard({ member, index, current }: MemberCardProps) {
                 loading="lazy"
                 decoding="async"
                 draggable={false}
-                className={cx(portraitFit, "opacity-0", fade, showHover)}
+                className={cn(portraitFit, "opacity-0", fade, showHover)}
               />
             )}
           </>

@@ -35,9 +35,12 @@ export function useSession(): SessionState {
 }
 
 function useRawSession(): SessionState {
-  const [state, setState] = useState<SessionState>({ status: "loading" });
+  // Without Supabase settings there is no session to wait for.
+  const [state, setState] = useState<SessionState>(() =>
+    supabase ? { status: "loading" } : { status: "signed-out" },
+  );
   useEffect(() => {
-    if (!supabase) return setState({ status: "signed-out" });
+    if (!supabase) return;
     supabase.auth
       .getSession()
       .then(({ data }) =>
@@ -53,7 +56,7 @@ function useRawSession(): SessionState {
   return state;
 }
 
-export class ApiError extends Error {
+class ApiError extends Error {
   readonly status: number;
   constructor(message: string, status: number) {
     super(message);

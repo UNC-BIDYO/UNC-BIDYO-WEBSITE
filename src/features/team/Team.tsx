@@ -1,6 +1,6 @@
 import { useCallback, useRef, useState, type PointerEvent, type ReactNode } from "react";
 import { usePrefersReducedMotion } from "@/shared/hooks/usePrefersReducedMotion";
-import { cx } from "@/shared/lib/cx";
+import { cn } from "@/shared/lib/utils";
 import { Button } from "@/shared/ui/Button";
 import { Container } from "@/shared/ui/Container";
 import { ArrowIcon } from "@/shared/ui/icons";
@@ -88,7 +88,7 @@ function TeamCarousel() {
   };
 
   const prevNext = (className: string, middle?: ReactNode) => (
-    <div className={cx("items-center gap-3", className)}>
+    <div className={cn("items-center gap-3", className)}>
       <Button
         variant="outline"
         size="icon"
@@ -170,7 +170,7 @@ function TeamCarousel() {
             >
               <span
                 aria-hidden
-                className={cx(
+                className={cn(
                   "block h-1 transition-all",
                   n === active ? "w-8 bg-accent" : "w-4 bg-muted group-hover:bg-ink",
                 )}
