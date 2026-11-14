@@ -22,18 +22,80 @@ import {
   renderBookingEmail,
   sendEmail,
 } from "./_lib/email.js";
-import { insertBooking, supabaseConfig, uploadLetter } from "./_lib/supabase.js";
+import { addDays, freeBusy, googleConfig, manilaMidnight } from "./_lib/google.js";
+import {
+  getSetting,
+  insertBooking,
+  supabaseConfig,
+  uploadLetter,
+  type SupabaseConfig,
+} from "./_lib/supabase.js";
+
+type Outcome = "received" | "unavailable";
+
+/**
+ * The admin overlap check (Settings → "Automatically decline clashing bookings"): are any of the
+ * requested days busy in Bidyo's Google Calendar? "skipped" when the switch is off; "error" when
+ * it's on but Google can't be asked, which must never decline anyone.
+ */
+async function checkOverlap(
+  db: SupabaseConfig,
+  start: string,
+  end: string | null,
+): Promise<"busy" | "free" | "skipped" | "error"> {
+  let on = false;
+  try {
+    on = (await getSetting(db, "overlap_check", false)) === true;
+  } catch (e) {
+    console.error("book: reading overlap_check failed:", (e as Error).message);
+    return "skipped";
+  }
+  if (!on) return "skipped";
+  const google = googleConfig("book");
+  if (!google) return "error";
+  try {
+    // Whole Manila days: [first day 00:00, day after the last 00:00). freeBusy already ignores
+    // events marked "Free" and cancelled ones.
+    const busy = await freeBusy(
+      google,
+      manilaMidnight(start),
+      manilaMidnight(addDays(end ?? start, 1)),
+    );
+    return busy.length > 0 ? "busy" : "free";
+  } catch (e) {
+    console.error("book: overlap check failed:", (e as Error).message);
+    return "error";
+  }
+}
+
+const OVERLAP_UNCHECKED = "Couldn't check Google Calendar for clashes; check the date manually.";
 
 /** Page shown after a plain (no-JavaScript) form post. */
-function resultPage(status: number, title: string, lines: string[]) {
-  const html = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>${escapeHtml(title)} | UNC Bidyo</title><style>body{margin:0;min-height:100vh;display:grid;place-items:center;background:#0b0b0c;color:#fff;font:18px/1.6 system-ui,sans-serif}main{max-width:36rem;padding:2rem 1.25rem}h1{font:700 2.5rem/1 Impact,"Arial Narrow Bold",sans-serif;text-transform:uppercase;margin:0 0 1rem}ul{padding-left:1.2rem;color:#ec6266}a{color:#fff;text-decoration-color:#ec6266;text-underline-offset:4px}</style></head><body><main><h1>${escapeHtml(title)}</h1>${lines.length > 1 ? `<ul>${lines.map((l) => `<li>${escapeHtml(l)}</li>`).join("")}</ul>` : `<p>${escapeHtml(lines[0] ?? "")}</p>`}<p><a href="/#book">Back to UNC Bidyo</a></p></main></body></html>`;
+function resultPage(
+  status: number,
+  title: string,
+  lines: string[],
+  link: { href: string; label: string } = { href: "/#book", label: "Back to UNC Bidyo" },
+) {
+  const html = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>${escapeHtml(title)} | UNC Bidyo</title><style>body{margin:0;min-height:100vh;display:grid;place-items:center;background:#0b0b0c;color:#fff;font:18px/1.6 system-ui,sans-serif}main{max-width:36rem;padding:2rem 1.25rem}h1{font:700 2.5rem/1 Impact,"Arial Narrow Bold",sans-serif;text-transform:uppercase;margin:0 0 1rem}ul{padding-left:1.2rem;color:#ec6266}a{color:#fff;text-decoration-color:#ec6266;text-underline-offset:4px}</style></head><body><main><h1>${escapeHtml(title)}</h1>${lines.length > 1 ? `<ul>${lines.map((l) => `<li>${escapeHtml(l)}</li>`).join("")}</ul>` : `<p>${escapeHtml(lines[0] ?? "")}</p>`}<p><a href="${escapeHtml(link.href)}">${escapeHtml(link.label)}</a></p></main></body></html>`;
   return new Response(html, { status, headers: { "Content-Type": "text/html; charset=utf-8" } });
 }
 
 export async function POST(request: Request): Promise<Response> {
   const wantsJson = (request.headers.get("accept") ?? "").includes("application/json");
-  const reply = (status: number, body: { ok: boolean; errors?: Errors; message?: string }) => {
+  const reply = (
+    status: number,
+    body: { ok: boolean; outcome?: Outcome; errors?: Errors; message?: string },
+  ) => {
     if (wantsJson) return Response.json(body, { status });
+    if (body.ok && body.outcome === "unavailable") {
+      return resultPage(
+        200,
+        "That date is already booked",
+        ["We're already covering another event then. Check our schedule and pick another day."],
+        { href: "/#schedule", label: "See booked days" },
+      );
+    }
     if (body.ok)
       return resultPage(200, "Request sent", [
         "Thanks! We got your booking request. Check your email for a summary.",
@@ -60,11 +122,13 @@ export async function POST(request: Request): Promise<Response> {
   }
 
   // Spam trap: people never see this field. Pretend it worked so bots don't adapt.
-  if (text(form, "_gotcha")) return reply(200, { ok: true });
+  if (text(form, "_gotcha")) return reply(200, { ok: true, outcome: "received" });
 
   const result = validate(form);
   if (!("fields" in result)) return reply(400, { ok: false, errors: result.errors });
   const { fields, letter } = result;
+  const overlap = await checkOverlap(db, fields.start_date, fields.end_date);
+  const declined = overlap === "busy";
 
   let booking;
   let letterBytes: ArrayBuffer | null = null;
@@ -75,7 +139,21 @@ export async function POST(request: Request): Promise<Response> {
       letter_path = `${todayInManila().slice(0, 7)}/${crypto.randomUUID()}-${safeFileName(letter.name)}`;
       await uploadLetter(db, letter_path, letter.type, letterBytes);
     }
-    booking = await insertBooking(db, { ...fields, letter_path });
+    booking = await insertBooking(db, {
+      ...fields,
+      letter_path,
+      ...(declined
+        ? {
+            status: "declined",
+            auto_declined: true,
+            decision_reason: "Date unavailable (already booked)",
+            decided_at: new Date().toISOString(),
+            decided_by: "automatic overlap check",
+          }
+        : overlap === "error"
+          ? { calendar_sync_error: OVERLAP_UNCHECKED }
+          : {}),
+    });
   } catch (e) {
     console.error("book: saving failed", e);
     return reply(502, {
@@ -90,7 +168,7 @@ export async function POST(request: Request): Promise<Response> {
   if (canEmailCustomers()) {
     sends.push(
       sendEmail("book", {
-        ...renderBookingEmail("received", booking, { letterName }),
+        ...renderBookingEmail(declined ? "unavailable" : "received", booking, { letterName }),
         to: [booking.email],
       }),
     );
@@ -101,7 +179,9 @@ export async function POST(request: Request): Promise<Response> {
   }
   sends.push(
     sendEmail("book", {
-      ...renderBookingEmail("received-copy", booking, { letterName }),
+      ...renderBookingEmail(declined ? "auto-declined-copy" : "received-copy", booking, {
+        letterName,
+      }),
       to: notifyAddresses(),
       replyTo: booking.email,
       attachments:
@@ -117,5 +197,5 @@ export async function POST(request: Request): Promise<Response> {
   );
   await Promise.all(sends);
 
-  return reply(200, { ok: true });
+  return reply(200, { ok: true, outcome: declined ? "unavailable" : "received" });
 }
