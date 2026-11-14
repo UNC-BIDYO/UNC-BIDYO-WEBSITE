@@ -6,12 +6,19 @@ const { POST } = await import("../../api/book.ts");
 const { renderBookingEmail } = await import("../../api/_lib/email.ts");
 
 const calls = [];
+let recentRows = [],
+  failCount = false,
+  turnstileOk = true;
 let failStorage = false,
   failEmail = false,
   failInsert = false;
 globalThis.fetch = async (url, init = {}) => {
   const u = String(url);
   calls.push({ url: u, init });
+  if (u.includes("challenges.cloudflare.com")) return Response.json({ success: turnstileOk });
+  if (u.includes("/rest/v1/bookings") && (init.method ?? "GET") === "GET") {
+    return failCount ? new Response("down", { status: 500 }) : Response.json(recentRows);
+  }
   if (u.includes("/storage/") && failStorage) return new Response("boom", { status: 500 });
   if (u.includes("/rest/v1/bookings") && failInsert) return new Response("no", { status: 400 });
   if (u.includes("resend") && failEmail) return new Response("bad", { status: 422 });
@@ -74,7 +81,8 @@ const run = async (f, json = true) => {
   const body = json ? await res.json() : await res.text();
   return { status: res.status, body };
 };
-const insertCall = () => calls.find((c) => c.url.includes("/rest/v1/bookings"));
+const insertCall = () =>
+  calls.find((c) => c.url.includes("/rest/v1/bookings") && c.init.method === "POST");
 const storageCall = () => calls.find((c) => c.url.includes("/storage/"));
 const mails = () =>
   calls.filter((c) => c.url.includes("resend")).map((c) => JSON.parse(c.init.body));
@@ -89,7 +97,13 @@ const quiet = async (fn) => {
     console.warn = w;
   }
 };
-beforeEach(() => setEnv(true));
+beforeEach(() => {
+  setEnv(true);
+  recentRows = [];
+  failCount = false;
+  turnstileOk = true;
+  delete process.env.TURNSTILE_SECRET_KEY;
+});
 
 it("503 when Supabase keys are missing", async () => {
   setEnv(false);
@@ -304,3 +318,66 @@ for (const [kind, [subject, pill]] of Object.entries(expect)) {
     if (kind === "unavailable") assert.match(m.html, /\/#schedule/);
   });
 }
+
+// ---- Abuse protection: Cloudflare Turnstile + per-address limit ----
+const turnstileCall = () => calls.find((c) => c.url.includes("challenges.cloudflare.com"));
+
+it("Turnstile off (no secret): no verification call, booking saved", async () => {
+  const r = await run(form());
+  assert.equal(r.status, 200);
+  assert.equal(turnstileCall(), undefined);
+});
+
+it("Turnstile on, no token: 400 security-check message, nothing saved or sent", async () => {
+  process.env.TURNSTILE_SECRET_KEY = "0x-secret";
+  const r = await run(form());
+  assert.equal(r.status, 400);
+  assert.match(r.body.message, /security check/);
+  assert.equal(insertCall(), undefined);
+  assert.equal(mails().length, 0);
+});
+
+it("Turnstile on, token rejected by Cloudflare: 400, nothing saved", async () => {
+  process.env.TURNSTILE_SECRET_KEY = "0x-secret";
+  turnstileOk = false;
+  const r = await quiet(() => run(form({ "cf-turnstile-response": "bad-token" })));
+  assert.equal(r.status, 400);
+  assert.equal(insertCall(), undefined);
+});
+
+it("Turnstile on, valid token: verified with secret + token, booking saved", async () => {
+  process.env.TURNSTILE_SECRET_KEY = "0x-secret";
+  const r = await run(form({ "cf-turnstile-response": "good-token" }));
+  assert.equal(r.status, 200);
+  const sent = new URLSearchParams(String(turnstileCall().init.body));
+  assert.equal(sent.get("secret"), "0x-secret");
+  assert.equal(sent.get("response"), "good-token");
+  assert.ok(insertCall());
+});
+
+it("4th request from one address within an hour: 429, nothing saved or sent", async () => {
+  recentRows = [{ id: "a" }, { id: "b" }, { id: "c" }];
+  const r = await quiet(() => run(form()));
+  assert.equal(r.status, 429);
+  assert.match(r.body.message, /several requests/);
+  assert.equal(insertCall(), undefined);
+  assert.equal(mails().length, 0);
+  const countUrl = calls.find((c) => c.url.includes("select=id")).url;
+  assert.match(countUrl, /email=eq\.juan%40unc\.edu\.ph/);
+  assert.match(countUrl, /created_at=gte\./);
+});
+
+it("counting recent requests fails: the booking still goes through", async () => {
+  failCount = true;
+  const r = await quiet(() => run(form()));
+  assert.equal(r.status, 200);
+  assert.ok(insertCall());
+});
+
+it("Turnstile on, no-JS post without a token: page points to the contact email", async () => {
+  process.env.TURNSTILE_SECRET_KEY = "0x-secret";
+  const r = await run(form(), false);
+  assert.equal(r.status, 400);
+  assert.match(r.body, /needs JavaScript/);
+  assert.match(r.body, /uncbidyoorg@gmail\.com/);
+});

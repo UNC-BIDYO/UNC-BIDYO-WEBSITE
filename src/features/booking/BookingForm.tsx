@@ -19,6 +19,7 @@ import { ArrowIcon } from "@/shared/ui/icons";
 import { NativeSelectOption } from "@/shared/ui/primitives/native-select";
 import { useSchedule } from "@/features/schedule/useSchedule";
 import { useRequestedService } from "./bookingIntent";
+import { Turnstile } from "./Turnstile";
 
 /** Vercel function in api/book.ts: saves to Supabase and emails Bidyo. */
 const BOOKING_ENDPOINT = "/api/book";
@@ -44,6 +45,7 @@ const startOfToday = () => {
 export function BookingForm() {
   const hydrated = useHydrated();
   const [status, setStatus] = useState<Status>("idle");
+  const [submissions, setSubmissions] = useState(0);
   const [errors, setErrors] = useState<Errors>({});
   const [message, setMessage] = useState("");
   const statusRef = useRef<HTMLParagraphElement>(null);
@@ -110,6 +112,8 @@ export function BookingForm() {
 
     setStatus("sending");
     setErrors({});
+    // A Turnstile token works once, so get a fresh one whatever the outcome.
+    setSubmissions((n) => n + 1);
     try {
       const res = await fetch(BOOKING_ENDPOINT, {
         method: "POST",
@@ -137,8 +141,10 @@ export function BookingForm() {
         setStatus("sent");
         return;
       }
-      // The server's `message` is written for the no-JavaScript page; here the line below says it.
       if (body?.errors) return fail("Check the highlighted fields.", body.errors);
+      // Security check or too many requests: the server's message says what to do. Other
+      // failures' messages are written for the no-JavaScript page, so use the generic line.
+      if ((res.status === 400 || res.status === 429) && body?.message) return fail(body.message);
       fail("That didn't go through.");
     } catch {
       fail("That didn't go through.");
@@ -358,6 +364,8 @@ export function BookingForm() {
           />
         </div>
       </FormSection>
+
+      <Turnstile resetKey={submissions} />
 
       <div className="flex flex-wrap items-center gap-x-6 gap-y-4">
         <Button type="submit" size="lg" disabled={status === "sending"}>
