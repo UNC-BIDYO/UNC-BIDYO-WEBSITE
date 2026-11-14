@@ -24,7 +24,9 @@ import {
 } from "./_lib/email.js";
 import { addDays, freeBusy, googleConfig, manilaMidnight } from "./_lib/google.js";
 import { CONTACT_EMAIL } from "./_lib/site.js";
+import { clientIp, verifyHuman } from "./_lib/turnstile.js";
 import {
+  countRecentBookings,
   getSetting,
   insertBooking,
   supabaseConfig,
@@ -68,6 +70,9 @@ async function checkOverlap(
     return "error";
   }
 }
+
+/** Requests allowed per email address per hour, so the form can't be used to flood an inbox. */
+const MAX_PER_ADDRESS_PER_HOUR = 3;
 
 const OVERLAP_UNCHECKED = "Couldn't check Google Calendar for clashes; check the date manually.";
 
@@ -125,9 +130,37 @@ export async function POST(request: Request): Promise<Response> {
   // Spam trap: people never see this field. Pretend it worked so bots don't adapt.
   if (text(form, "_gotcha")) return reply(200, { ok: true, outcome: "received" });
 
+  // Bot check (Cloudflare Turnstile), only once TURNSTILE_SECRET_KEY is set.
+  const human = await verifyHuman(text(form, "cf-turnstile-response"), clientIp(request));
+  if (human === "missing" || human === "failed") {
+    return reply(400, {
+      ok: false,
+      // Without JavaScript the widget can't run, so point those visitors to email instead.
+      message: wantsJson
+        ? "Please complete the security check above the Send button, then send again."
+        : `This form needs JavaScript for its security check. Please turn it on, or email ${CONTACT_EMAIL}.`,
+    });
+  }
+
   const result = validate(form);
   if (!("fields" in result)) return reply(400, { ok: false, errors: result.errors });
   const { fields, letter } = result;
+
+  // Each request emails the address typed in, so cap requests per address. A failed count
+  // never blocks a real booking.
+  const hourAgo = new Date(Date.now() - 3600_000).toISOString();
+  const recent = await countRecentBookings(db, fields.email, hourAgo).catch((e: Error) => {
+    console.error("book: counting recent requests failed:", e.message);
+    return 0;
+  });
+  if (recent >= MAX_PER_ADDRESS_PER_HOUR) {
+    console.warn(`book: ${recent} requests in the last hour for one address; rejected`);
+    return reply(429, {
+      ok: false,
+      message:
+        "You've sent several requests in the last hour. Please wait a while before sending another.",
+    });
+  }
   const overlap = await checkOverlap(db, fields.start_date, fields.end_date);
   const declined = overlap === "busy";
 

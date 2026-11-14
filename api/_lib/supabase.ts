@@ -143,3 +143,14 @@ export async function userEmailForToken(db: SupabaseConfig, token: string): Prom
   const user = (await res.json()) as { email?: string };
   return user.email?.toLowerCase() ?? null;
 }
+
+/** How many bookings this email address submitted since `sinceIso` (for the per-address limit). */
+export async function countRecentBookings(
+  db: SupabaseConfig,
+  email: string,
+  sinceIso: string,
+): Promise<number> {
+  const q = `bookings?select=id&email=eq.${encodeURIComponent(email)}&created_at=gte.${encodeURIComponent(sinceIso)}&limit=20`;
+  const res = await fetch(rest(db, q), { headers: supabaseHeaders(db.key) });
+  return ((await (await expectOk(res, "count bookings")).json()) as unknown[]).length;
+}
