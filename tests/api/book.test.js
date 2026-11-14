@@ -57,15 +57,19 @@ function form(overrides = {}, letter) {
     mobile: "0917 123 4567",
     organization: "SCIS",
     event_title: "Intramurals 2026",
-    service: "Event Coverage",
+    services: "Event Coverage",
     start_date: future(10),
     venue: "UNC Gym",
-    shooters: "3",
+    photographers: "2",
+    videographers: "1",
     requests: "Group photo at 3pm",
     _gotcha: "",
     ...overrides,
   };
-  for (const [k, v] of Object.entries(base)) if (v !== undefined) f.append(k, v);
+  for (const [k, v] of Object.entries(base)) {
+    if (v === undefined) continue;
+    for (const one of Array.isArray(v) ? v : [v]) f.append(k, one);
+  }
   f.append("letter", letter ?? new File([], ""), letter?.name ?? "");
   return f;
 }
@@ -209,9 +213,12 @@ const invalid = [
   ["end before start", { multiday: "yes", end_date: future(9) }, "end_date"],
   ["end same day", { multiday: "yes", end_date: future(10) }, "end_date"],
   ["multi-day without end", { multiday: "yes" }, "end_date"],
-  ["zero shooters", { shooters: "0" }, "shooters"],
-  ["11 shooters", { shooters: "11" }, "shooters"],
-  ["fractional shooters", { shooters: "2.5" }, "shooters"],
+  ["no crew at all", { photographers: "0", videographers: "" }, "crew"],
+  ["11 photographers", { photographers: "11" }, "photographers"],
+  ["fractional videographers", { videographers: "1.5" }, "videographers"],
+  ["negative photographers", { photographers: "-1" }, "photographers"],
+  ["no service", { services: undefined }, "services"],
+  ["only unknown services", { services: ["Weddings", "Drone"] }, "services"],
   ["missing venue", { venue: " " }, "venue"],
   ["too-long organization", { organization: "x".repeat(151) }, "organization"],
 ];
@@ -287,10 +294,12 @@ const sample = {
   mobile: "0917 123 4567",
   organization: "School of Computer and Information Sciences",
   event_title: "Learning-Drive <2026>",
-  service: "Event Coverage",
+  services: ["Event Coverage", "Video Production"],
   start_date: "2026-09-16",
   end_date: "2026-09-17",
   venue: "Social Hall",
+  photographers: 1,
+  videographers: 1,
   shooters: 2,
   requests: "Please cover the opening program & awarding.",
   letter_path: "x",
@@ -380,4 +389,50 @@ it("Turnstile on, no-JS post without a token: page points to the contact email",
   assert.equal(r.status, 400);
   assert.match(r.body, /needs JavaScript/);
   assert.match(r.body, /uncbidyoorg@gmail\.com/);
+});
+
+// ---- Services (several) and crew (per role) ----
+it("several services stored as an array; unknown and duplicate ones dropped", async () => {
+  const r = await run(
+    form({ services: ["Photoshoots", "Video Production", "Weddings", "Photoshoots"] }),
+  );
+  assert.equal(r.status, 200);
+  assert.deepEqual(JSON.parse(insertCall().init.body).services, [
+    "Photoshoots",
+    "Video Production",
+  ]);
+});
+
+it("crew per role: stored separately, total in shooters, shown in both emails", async () => {
+  const r = await run(form({ photographers: "2", videographers: "1" }));
+  assert.equal(r.status, 200);
+  const row = JSON.parse(insertCall().init.body);
+  assert.equal(row.photographers, 2);
+  assert.equal(row.videographers, 1);
+  assert.equal(row.shooters, 3);
+  for (const m of mails()) {
+    assert.match(m.html, /2 photographers, 1 videographer/);
+    assert.match(m.text, /Crew: 2 photographers, 1 videographer/);
+  }
+});
+
+it("videographers only (photographers left empty) is fine", async () => {
+  const r = await run(form({ photographers: "", videographers: "1" }));
+  assert.equal(r.status, 200);
+  const row = JSON.parse(insertCall().init.body);
+  assert.deepEqual([row.photographers, row.videographers, row.shooters], [0, 1, 1]);
+  assert.match(mails()[0].text, /Crew: 1 videographer\n/);
+});
+
+it("email says Services (plural) with several, Service with one", async () => {
+  await run(form({ services: ["Event Coverage", "Photoshoots"] }));
+  assert.match(mails()[0].text, /Services: Event Coverage, Photoshoots/);
+  await run(form({ services: "Photoshoots" }));
+  assert.match(mails()[0].text, /Service: Photoshoots/);
+});
+
+it("BOOKING_RULES.services matches the service cards (+ Other)", async () => {
+  const { BOOKING_RULES } = await import("../../api/_lib/rules.ts");
+  const { services } = await import("../../src/features/services/serviceList.ts");
+  assert.deepEqual([...BOOKING_RULES.services], [...services.map((s) => s.title), "Other"]);
 });

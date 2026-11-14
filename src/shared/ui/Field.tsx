@@ -11,7 +11,6 @@ import {
   FieldSet,
 } from "@/shared/ui/primitives/field";
 import { Input } from "@/shared/ui/primitives/input";
-import { NativeSelect } from "@/shared/ui/primitives/native-select";
 import { Textarea } from "@/shared/ui/primitives/textarea";
 
 /* The site's form API, built on the shadcn/ui primitives in ./primitives.
@@ -137,26 +136,6 @@ export function TextField({
   );
 }
 
-export function SelectField({
-  label,
-  hint,
-  error,
-  optional,
-  className,
-  children,
-  ...select
-}: ShellProps & Omit<ComponentPropsWithoutRef<"select">, "id" | "size">) {
-  return (
-    <FieldShell {...{ label, hint, error, optional, className }}>
-      {(control) => (
-        <NativeSelect {...control} className={cn(controlSize, "pr-10")} {...select}>
-          {children}
-        </NativeSelect>
-      )}
-    </FieldShell>
-  );
-}
-
 export function TextAreaField({
   label,
   hint,
@@ -250,5 +229,76 @@ export function CheckboxField({
         {label}
       </FieldLabel>
     </Field>
+  );
+}
+
+type CheckboxGroupFieldProps = {
+  legend: string;
+  name: string;
+  options: readonly { value: string; label: string }[];
+  value: string[];
+  /** Receives an updater, so quick successive ticks never overwrite each other. */
+  onChange: (update: (previous: string[]) => string[]) => void;
+  hint?: string;
+  error?: string;
+  /** Groups need at least one tick unless this is set. */
+  optional?: boolean;
+  className?: string;
+};
+
+/** Several checkboxes under one legend (shadcn FieldSet + Checkbox). Each ticked box posts its
+    own `name` value, so the server reads them with FormData.getAll(name). "At least one" is
+    checked in code: browsers can't require "one of" a set of checkboxes. */
+export function CheckboxGroupField({
+  legend,
+  name,
+  options,
+  value,
+  onChange,
+  hint,
+  error,
+  optional,
+  className,
+}: CheckboxGroupFieldProps) {
+  const id = useId();
+  const hintId = hint ? `${id}-hint` : undefined;
+  const errorId = error ? `${id}-error` : undefined;
+  const toggle = (option: string, on: boolean) =>
+    onChange((previous) =>
+      on ? [...new Set([...previous, option])] : previous.filter((v) => v !== option),
+    );
+  return (
+    <FieldSet
+      data-invalid={error ? true : undefined}
+      aria-describedby={[hintId, errorId].filter(Boolean).join(" ") || undefined}
+      className={cn("min-w-0 gap-3", className)}
+    >
+      <FieldLegend variant="label" className={cn(labelStyle, "mb-0 flex gap-1.5")}>
+        {legend}
+        {!optional && <RequiredMark />}
+      </FieldLegend>
+      {hint && (
+        <FieldDescription id={hintId} className="-mt-1">
+          {hint}
+        </FieldDescription>
+      )}
+      <div className="grid gap-x-6 gap-y-3 sm:grid-cols-2">
+        {options.map((o) => (
+          <CheckboxField
+            key={o.value}
+            label={o.label}
+            name={name}
+            value={o.value}
+            checked={value.includes(o.value)}
+            onCheckedChange={(on) => toggle(o.value, on)}
+          />
+        ))}
+      </div>
+      {error && (
+        <FieldError id={errorId} role={undefined}>
+          {error}
+        </FieldError>
+      )}
+    </FieldSet>
   );
 }

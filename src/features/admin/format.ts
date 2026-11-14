@@ -1,8 +1,14 @@
-import { fullName, type Booking, type BookingStatus } from "@api/booking";
+import {
+  formatCrew,
+  formatServices,
+  fullName,
+  type Booking,
+  type BookingStatus,
+} from "@api/booking";
 import { isoDay, parseDay } from "@/shared/lib/dates";
 
 export type { Booking, BookingStatus };
-export { fullName, isoDay, parseDay };
+export { formatCrew, formatServices, fullName, isoDay, parseDay };
 
 const day = new Intl.DateTimeFormat("en-PH", { month: "short", day: "numeric", year: "numeric" });
 const dateTime = new Intl.DateTimeFormat("en-PH", {

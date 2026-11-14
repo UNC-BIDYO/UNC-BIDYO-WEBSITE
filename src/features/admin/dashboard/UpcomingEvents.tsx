@@ -7,7 +7,7 @@ import {
   CardTitle,
 } from "@/shared/ui/primitives/card";
 import { Separator } from "@/shared/ui/primitives/separator";
-import { eventDates, isoDay, type Booking } from "../format";
+import { eventDates, formatCrew, isoDay, type Booking } from "../format";
 
 /* The next approved bookings, soonest first. */
 export function UpcomingEvents({
@@ -52,7 +52,7 @@ export function UpcomingEvents({
                       </span>
                       <span className="flex items-center gap-1">
                         <Users className="size-3.5" />
-                        {b.shooters} {b.shooters === 1 ? "shooter" : "shooters"}
+                        {formatCrew(b)}
                       </span>
                     </p>
                   </div>

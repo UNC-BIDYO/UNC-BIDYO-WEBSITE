@@ -12,11 +12,13 @@ create table if not exists public.bookings (
   mobile        text not null,
   organization  text not null,
   event_title   text not null,
-  service       text not null,
+  services      text[] not null check (cardinality(services) >= 1),
   start_date    date not null,
   end_date      date check (end_date is null or end_date > start_date),
   venue         text not null,
-  shooters      smallint not null check (shooters between 1 and 20),
+  photographers smallint not null default 0,
+  videographers smallint not null default 0,
+  shooters      smallint not null check (shooters between 1 and 20), -- photographers + videographers
   requests      text,
   letter_path   text, -- path inside the private "letters" bucket
   -- Set by the admin panel (/api/admin/decide) and the overlap check (/api/book).
@@ -25,7 +27,12 @@ create table if not exists public.bookings (
   decision_reason     text,
   auto_declined       boolean not null default false,
   calendar_event_id   text, -- Google Calendar event created on approval
-  calendar_sync_error text  -- last error creating it, if any
+  calendar_sync_error text, -- last error creating it, if any
+  constraint bookings_crew_check check (
+    photographers between 0 and 10
+    and videographers between 0 and 10
+    and photographers + videographers >= 1
+  )
 );
 
 comment on table public.bookings is

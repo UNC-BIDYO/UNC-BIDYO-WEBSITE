@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { BOOKING_RULES } from "@api/rules";
-import { services } from "@/features/services/serviceList";
 import { useHydrated } from "@/shared/hooks/useHydrated";
+import { cn } from "@/shared/lib/utils";
 import { CONTACT_EMAIL, mailto } from "@/shared/lib/site";
 import { Button } from "@/shared/ui/Button";
 import type { DateRangeValue } from "@/shared/ui/DateCalendar";
@@ -11,12 +11,11 @@ import {
   FileField,
   FormSection,
   RequiredNote,
-  SelectField,
+  CheckboxGroupField,
   TextAreaField,
   TextField,
 } from "@/shared/ui/Field";
 import { ArrowIcon } from "@/shared/ui/icons";
-import { NativeSelectOption } from "@/shared/ui/primitives/native-select";
 import { useSchedule } from "@/features/schedule/useSchedule";
 import { useRequestedService } from "./bookingIntent";
 import { Turnstile } from "./Turnstile";
@@ -26,6 +25,12 @@ const BOOKING_ENDPOINT = "/api/book";
 
 type Status = "idle" | "sending" | "sent" | "unavailable" | "error";
 type Errors = Record<string, string>;
+
+/** The service checkboxes; values are what the server accepts (BOOKING_RULES.services). */
+const SERVICE_OPTIONS = BOOKING_RULES.services.map((s) => ({
+  value: s,
+  label: s === "Other" ? "Other / not sure" : s,
+}));
 
 const LETTER_ACCEPT = Object.keys(BOOKING_RULES.letterTypes)
   .map((ext) => `.${ext}`)
@@ -52,11 +57,14 @@ export function BookingForm() {
 
   // A "Book now" link on a service panel preselects that service.
   const requested = useRequestedService();
-  const [service, setService] = useState("");
+  const [chosenServices, setChosenServices] = useState<string[]>([]);
   const [seen, setSeen] = useState(requested);
   if (requested !== seen) {
     setSeen(requested);
-    setService(requested);
+    // Tick the requested service, keeping anything already ticked.
+    if (requested && !chosenServices.includes(requested)) {
+      setChosenServices([...chosenServices, requested]);
+    }
   }
 
   const [multiDay, setMultiDay] = useState(false);
@@ -98,6 +106,14 @@ export function BookingForm() {
       found.end_date = "Choose the last day of the event (at least the day after the first).";
     }
 
+    // Checkbox groups and the crew total can't be required natively, so check them here.
+    if (chosenServices.length === 0) found.services = "Choose at least one service.";
+    const crewTotal =
+      Number(data.get("photographers") || 0) + Number(data.get("videographers") || 0);
+    if (crewTotal < BOOKING_RULES.crew.minTotal) {
+      found.crew = "Ask for at least one photographer or videographer.";
+    }
+
     // Check the letter here too, so a too-big file fails fast instead of after uploading.
     const letter = data.get("letter");
     if (letter instanceof File && letter.size > 0) {
@@ -135,7 +151,7 @@ export function BookingForm() {
       }
       if (res.ok && body?.ok) {
         form.reset();
-        setService("");
+        setChosenServices([]);
         setDates({});
         setMultiDay(false);
         setStatus("sent");
@@ -239,33 +255,49 @@ export function BookingForm() {
             maxLength={max.event_title}
             error={errors.event_title}
           />
-          <SelectField
-            label="Service"
-            name="service"
-            value={service}
-            onChange={(e) => setService(e.target.value)}
-            error={errors.service}
-          >
-            <NativeSelectOption value="" disabled>
-              Choose a service
-            </NativeSelectOption>
-            {services.map((s) => (
-              <NativeSelectOption key={s.slug} value={s.title}>
-                {s.title}
-              </NativeSelectOption>
-            ))}
-            <NativeSelectOption value="Other">Other / not sure</NativeSelectOption>
-          </SelectField>
+          <CheckboxGroupField
+            legend="Services"
+            name="services"
+            hint="Tick everything you need."
+            options={SERVICE_OPTIONS}
+            value={chosenServices}
+            onChange={setChosenServices}
+            error={errors.services}
+            className="sm:col-span-2"
+          />
           <TextField
-            label="Number of shooters"
-            name="shooters"
+            label="Photographers"
+            name="photographers"
             type="number"
             inputMode="numeric"
-            min={BOOKING_RULES.shooters.min}
-            max={BOOKING_RULES.shooters.max}
+            optional
+            min={BOOKING_RULES.crew.min}
+            max={BOOKING_RULES.crew.max}
             step={1}
-            error={errors.shooters}
+            placeholder="0"
+            error={errors.photographers}
           />
+          <TextField
+            label="Videographers"
+            name="videographers"
+            type="number"
+            inputMode="numeric"
+            optional
+            min={BOOKING_RULES.crew.min}
+            max={BOOKING_RULES.crew.max}
+            step={1}
+            placeholder="0"
+            error={errors.videographers}
+          />
+          <p
+            id="crew-note"
+            className={cn(
+              "-mt-3 text-sm sm:col-span-2",
+              errors.crew ? "text-destructive" : "text-muted-foreground",
+            )}
+          >
+            {errors.crew ?? "How many of each? At least one in total."}
+          </p>{" "}
         </div>
       </FormSection>
 

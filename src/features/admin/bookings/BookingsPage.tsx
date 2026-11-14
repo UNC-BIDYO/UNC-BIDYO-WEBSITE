@@ -32,7 +32,15 @@ import {
 } from "@/shared/ui/primitives/table";
 import { Tabs, TabsList, TabsTrigger } from "@/shared/ui/primitives/tabs";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/shared/ui/primitives/tooltip";
-import { eventDates, fullName, submittedAt, type Booking, type BookingStatus } from "../format";
+import {
+  eventDates,
+  formatCrew,
+  formatServices,
+  fullName,
+  submittedAt,
+  type Booking,
+  type BookingStatus,
+} from "../format";
 import { StatusBadge } from "../StatusBadge";
 
 type Tab = BookingStatus | "all";
@@ -60,11 +68,12 @@ const columns: ColumnDef<Booking>[] = [
   {
     id: "event",
     header: "Event",
-    accessorFn: (b) => `${b.event_title} ${b.organization}`,
+    accessorFn: (b) => `${b.event_title} ${b.organization} ${formatServices(b)}`,
     cell: ({ row }) => (
       <div className="min-w-40">
         <p className="font-medium">{row.original.event_title}</p>
         <p className="text-muted-foreground">{row.original.organization}</p>
+        <p className="text-xs text-muted-foreground">{formatServices(row.original)}</p>
       </div>
     ),
   },
@@ -85,7 +94,17 @@ const columns: ColumnDef<Booking>[] = [
     header: sortButton("Event date"),
     cell: ({ row }) => <span className="whitespace-nowrap">{eventDates(row.original)}</span>,
   },
-  { accessorKey: "shooters", header: "Shooters", enableGlobalFilter: false },
+  {
+    id: "crew",
+    accessorKey: "shooters",
+    header: sortButton("Crew"),
+    enableGlobalFilter: false,
+    cell: ({ row }) => (
+      <span className="whitespace-nowrap" title={formatCrew(row.original)}>
+        {row.original.photographers}P · {row.original.videographers}V
+      </span>
+    ),
+  },
   {
     id: "status",
     accessorKey: "status",

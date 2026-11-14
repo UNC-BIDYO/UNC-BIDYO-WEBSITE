@@ -19,7 +19,7 @@ Without the Supabase keys, the form shows "Booking is temporarily unavailable" w
    - **Region:** Southeast Asia (Singapore).
    - **Database password:** keep it somewhere safe. The website doesn't use it.
 2. Open **SQL Editor → New query**, paste all of [`schema.sql`](schema.sql), and click **Run**.
-   - If you set up the project with an earlier version, also run each file in [`migrations/`](migrations/) that you haven't run yet, oldest first. For example, `2026-11-14-split-name.sql` splits `name` into first, middle and last name.
+   - If you set up the project with an earlier version, also run each file in [`migrations/`](migrations/) that you haven't run yet, oldest first. For example, `2026-11-14-split-name.sql` splits `name` into first, middle and last name, and `2026-11-16-services-crew.sql` allows several services and splits the crew into photographers and videographers.
 3. Open **Project Settings → API**, and copy two values:
    - **Project URL**: `https://<id>.supabase.co`
    - **service_role** key (or a **secret** key, `sb_secret_…`). It is a server-only key: never put it in the site's code.

@@ -34,7 +34,14 @@ import {
 } from "@/shared/ui/primitives/sheet";
 import { Textarea } from "@/shared/ui/primitives/textarea";
 import { decide, letterUrl, type DecideResult } from "../data";
-import { eventDates, fullName, submittedAt, type Booking } from "../format";
+import {
+  eventDates,
+  formatCrew,
+  formatServices,
+  fullName,
+  submittedAt,
+  type Booking,
+} from "../format";
 import { StatusBadge } from "../StatusBadge";
 
 function Row({ label, children }: { label: string; children: ReactNode }) {
@@ -181,10 +188,12 @@ export function BookingSheet({
                 <h3 className="mb-1 text-sm font-semibold">Event</h3>
                 <dl>
                   <Row label="Organization">{b.organization}</Row>
-                  <Row label="Service">{b.service}</Row>
+                  <Row label={b.services.length > 1 ? "Services" : "Service"}>
+                    {formatServices(b)}
+                  </Row>
                   <Row label={b.end_date ? "Dates" : "Date"}>{eventDates(b)}</Row>
                   <Row label="Place">{b.venue}</Row>
-                  <Row label="Shooters">{b.shooters}</Row>
+                  <Row label="Crew">{formatCrew(b)}</Row>
                   {b.requests && (
                     <Row label="Requests">
                       <span className="whitespace-pre-wrap">{b.requests}</span>

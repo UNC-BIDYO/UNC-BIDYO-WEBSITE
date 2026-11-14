@@ -1,6 +1,6 @@
 /** Shared pieces of the admin API (/api/admin/*): sign-in check and the Google Calendar sync. */
 import { addDays, googleConfig, insertEvent } from "./google.js";
-import { formatDates, fullName, type Booking } from "./booking.js";
+import { formatCrew, formatDates, formatServices, fullName, type Booking } from "./booking.js";
 import { env } from "./env.js";
 import { CONTACT_EMAIL } from "./site.js";
 import {
@@ -64,7 +64,8 @@ export async function syncToCalendar(
         summary: `[Bidyo] ${booking.event_title} (${booking.organization})`,
         location: booking.venue,
         description: [
-          `Booked through uncbidyo.org: ${booking.service}, ${booking.shooters} shooter(s).`,
+          `Booked through uncbidyo.org: ${formatServices(booking)}.`,
+          `Crew: ${formatCrew(booking)}`,
           `Dates: ${formatDates(booking)}`,
           `Contact: ${fullName(booking)}, ${booking.email}, ${booking.mobile}`,
           booking.requests ? `Requests: ${booking.requests}` : "",
