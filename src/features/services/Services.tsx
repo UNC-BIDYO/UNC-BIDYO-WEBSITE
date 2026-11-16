@@ -102,7 +102,7 @@ function ServicePanel({
       onPointerEnter={(e) => e.pointerType === "mouse" && onHover()}
       onPointerMove={onPointerMove}
       className={cn(
-        "group relative isolate flex min-h-80 flex-col justify-end overflow-hidden bg-ink-2 md:min-h-0 md:basis-0",
+        "@container group relative isolate flex min-h-80 flex-col justify-end overflow-hidden bg-ink-2 md:min-h-0 md:basis-0",
         open ? "md:grow-[2.6]" : "md:grow",
         dimmed && "md:opacity-60",
         "motion-safe:transition-[flex-grow,opacity] motion-safe:duration-700",
@@ -145,7 +145,14 @@ function ServicePanel({
         >
           {number}
         </p>
-        <h3 className="mt-2 font-display text-4xl uppercase leading-[0.95] lg:text-5xl">
+        <h3
+          className={cn(
+            "mt-2 font-display text-[length:clamp(1.5rem,calc((100cqw_-_4.5rem)/4.8),2.25rem)] uppercase leading-[0.95] lg:text-[length:clamp(1.5rem,calc((100cqw_-_4.5rem)/4.8),3rem)]",
+            !open && "md:min-h-[2lh]",
+            "motion-safe:transition-[min-height] motion-safe:duration-700",
+            EASE,
+          )}
+        >
           {/* The button's ::after covers the whole panel, so a tap anywhere toggles it. */}
           <button
             type="button"
@@ -158,16 +165,33 @@ function ServicePanel({
             <span
               aria-hidden
               className={cn(
-                "mt-1 grid h-8 w-8 shrink-0 place-items-center border border-white/50 font-sans text-xl leading-none",
-                open && "rotate-45 border-accent-bright text-accent-bright",
-                "motion-safe:transition-transform motion-safe:duration-500",
+                "grid size-[max(1.5rem,0.75em)] shrink-0 place-items-center border border-white/50 font-sans leading-none",
+                open && "border-accent-bright text-accent-bright",
+                "motion-safe:transition-colors motion-safe:duration-500",
               )}
             >
-              +
+              <span
+                className={cn(
+                  "block text-[length:max(0.875rem,0.5em)] leading-none motion-safe:transition-transform motion-safe:duration-500",
+                  EASE,
+                  open && "rotate-45",
+                )}
+              >
+                +
+              </span>
             </span>
           </button>
         </h3>
-        <p className="mt-3 max-w-md leading-relaxed text-white">{service.summary}</p>
+        <p
+          className={cn(
+            "mt-3 max-w-md leading-relaxed text-white",
+            !open && "md:min-h-[4lh]",
+            "motion-safe:transition-[min-height] motion-safe:duration-700",
+            EASE,
+          )}
+        >
+          {service.summary}
+        </p>
 
         {/* Collapsible details: grid rows animate 0fr → 1fr; `inert` keeps hidden links out of Tab order. */}
         <div
