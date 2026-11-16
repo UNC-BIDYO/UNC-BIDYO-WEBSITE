@@ -11,6 +11,11 @@ updates:
       # One PR for all minor/patch bumps instead of one per package.
       minor-and-patch:
         update-types: [minor, patch]
+    ignore:
+      # The shadcn Data Table (admin bookings page) is written for TanStack Table v8;
+      # v9 renamed its API (useReactTable, getCoreRowModel…). Revisit when shadcn moves to v9.
+      - dependency-name: "@tanstack/react-table"
+        update-types: ["version-update:semver-major"]
 
   # Keeps the action versions in .github/workflows up to date.
   - package-ecosystem: github-actions
