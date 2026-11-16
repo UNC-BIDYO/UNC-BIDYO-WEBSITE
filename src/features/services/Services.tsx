@@ -1,4 +1,4 @@
-import { useState, type MouseEvent, type PointerEvent } from "react";
+import { useEffect, useRef, useState, type MouseEvent, type PointerEvent } from "react";
 import { requestBooking } from "@/features/booking/bookingIntent";
 import { useHydrated } from "@/shared/hooks/useHydrated";
 import { usePrefersReducedMotion } from "@/shared/hooks/usePrefersReducedMotion";
@@ -17,6 +17,40 @@ export function Services() {
   const [open, setOpen] = useState<number | null>(null);
   const reduced = usePrefersReducedMotion();
   const hydrated = useHydrated();
+  const hoverTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const hoverOpen = (n: number) => {
+    clearTimeout(hoverTimer.current);
+    hoverTimer.current = setTimeout(() => setOpen(n), 120);
+  };
+  useEffect(() => () => clearTimeout(hoverTimer.current), []);
+
+  // Cursor bloom: set --x/--y on every panel from the one cursor position, each frame while the
+  // mouse moves and for 1s after (panels are still resizing then). A panel's glow is therefore
+  // already under the cursor when it fades in, and it stays under the cursor while panels resize.
+  const listRef = useRef<HTMLUListElement>(null);
+  const pointer = useRef<{ x: number; y: number } | null>(null);
+  const bloomUntil = useRef(0);
+  const bloomFrame = useRef(0);
+  const paintBloom = () => {
+    const p = pointer.current;
+    const list = listRef.current;
+    if (p && list) {
+      for (const el of Array.from(list.children) as HTMLElement[]) {
+        const r = el.getBoundingClientRect();
+        el.style.setProperty("--x", `${p.x - r.left}px`);
+        el.style.setProperty("--y", `${p.y - r.top}px`);
+      }
+    }
+    bloomFrame.current =
+      performance.now() < bloomUntil.current ? requestAnimationFrame(paintBloom) : 0;
+  };
+  const trackBloom = (e: PointerEvent<HTMLUListElement>) => {
+    if (reduced || e.pointerType !== "mouse") return;
+    pointer.current = { x: e.clientX, y: e.clientY };
+    bloomUntil.current = performance.now() + 1000;
+    if (!bloomFrame.current) bloomFrame.current = requestAnimationFrame(paintBloom);
+  };
+  useEffect(() => () => cancelAnimationFrame(bloomFrame.current), []);
 
   return (
     <section
@@ -33,9 +67,20 @@ export function Services() {
           intro="Open a service to see what's included, then book it below."
           tone="dark"
         />
+        {/* md+: --col is the text width of a closed panel, --open the inner width of the open one.
+            They assume 3 panels at grow 1 / 1 / 1.8 (total 3.8), gap-5 and p-7; change them together
+            with the grow value below. The text is sized to --col, so it never rewraps while the panel widens. */}
         <ul
-          className="mt-12 flex flex-col gap-4 md:h-[34rem] md:flex-row md:gap-5"
-          onPointerLeave={(e) => e.pointerType === "mouse" && setOpen(null)}
+          className="@container mt-12 flex flex-col gap-4 md:h-[34rem] md:flex-row md:gap-5 md:[--col:calc((100cqw_-_2.5rem)/3.8_-_3.5rem)] md:[--open:calc((100cqw_-_2.5rem)*1.8/3.8_-_3.5rem)]"
+          ref={listRef}
+          onPointerEnter={trackBloom}
+          onPointerMove={trackBloom}
+          onPointerLeave={(e) => {
+            if (e.pointerType !== "mouse") return;
+            pointer.current = null;
+            clearTimeout(hoverTimer.current);
+            setOpen(null);
+          }}
         >
           {services.map((service, n) => (
             <ServicePanel
@@ -44,9 +89,8 @@ export function Services() {
               index={n}
               open={open === n}
               dimmed={open !== null && open !== n}
-              reduced={reduced}
               hydrated={hydrated}
-              onHover={() => setOpen(n)}
+              onHover={() => hoverOpen(n)}
               onToggle={() => setOpen((o) => (o === n ? null : n))}
             />
           ))}
@@ -61,7 +105,6 @@ type ServicePanelProps = {
   index: number;
   open: boolean;
   dimmed: boolean;
-  reduced: boolean;
   /** Before hydration the details are left un-inert, so they work without JavaScript. */
   hydrated: boolean;
   onHover: () => void;
@@ -73,7 +116,6 @@ function ServicePanel({
   index,
   open,
   dimmed,
-  reduced,
   hydrated,
   onHover,
   onToggle,
@@ -81,14 +123,6 @@ function ServicePanel({
   const photo = photoFor(service.slug);
   const detailsId = `service-details-${service.slug}`;
   const number = String(index + 1).padStart(2, "0");
-
-  // Spotlight that follows the cursor (mouse only; skipped with reduced motion).
-  const onPointerMove = (e: PointerEvent<HTMLLIElement>) => {
-    if (reduced || e.pointerType !== "mouse") return;
-    const r = e.currentTarget.getBoundingClientRect();
-    e.currentTarget.style.setProperty("--x", `${e.clientX - r.left}px`);
-    e.currentTarget.style.setProperty("--y", `${e.clientY - r.top}px`);
-  };
 
   // A mouse click on a hovered (already open) panel keeps it open; taps and Enter toggle.
   const onClick = (e: MouseEvent<HTMLButtonElement>) => {
@@ -100,11 +134,10 @@ function ServicePanel({
   return (
     <li
       onPointerEnter={(e) => e.pointerType === "mouse" && onHover()}
-      onPointerMove={onPointerMove}
       className={cn(
-        "@container group relative isolate flex min-h-80 flex-col justify-end overflow-hidden bg-ink-2 md:min-h-0 md:basis-0",
-        open ? "md:grow-[2.6]" : "md:grow",
-        dimmed && "md:opacity-60",
+        "group relative isolate flex min-h-80 flex-col justify-end overflow-hidden bg-ink-2 md:min-h-0 md:min-w-0 md:basis-0",
+        open ? "md:grow-[1.8]" : "md:grow",
+        dimmed && "md:opacity-80",
         "motion-safe:transition-[flex-grow,opacity] motion-safe:duration-700",
         EASE,
       )}
@@ -119,7 +152,7 @@ function ServicePanel({
           decoding="async"
           className={cn(
             "absolute inset-0 -z-10 h-full w-full object-cover",
-            open ? "scale-[1.06]" : "scale-100",
+            open ? "scale-[1.03]" : "scale-100",
             "motion-safe:transition-transform motion-safe:duration-[1200ms]",
             EASE,
           )}
@@ -133,8 +166,9 @@ function ServicePanel({
         aria-hidden
         className={cn(
           "pointer-events-none absolute inset-0 -z-10 [background:radial-gradient(28rem_circle_at_var(--x,50%)_var(--y,70%),rgba(236,98,102,0.3),transparent_60%)]",
-          open ? "opacity-100" : "opacity-0",
-          "motion-safe:transition-opacity motion-safe:duration-500",
+          open ? "opacity-100" : "opacity-0 group-hover:opacity-100",
+          "motion-safe:transition-opacity motion-safe:duration-700",
+          EASE,
         )}
       />
 
@@ -145,34 +179,27 @@ function ServicePanel({
         >
           {number}
         </p>
-        <h3
-          className={cn(
-            "mt-2 font-display text-[length:clamp(1.5rem,calc((100cqw_-_4.5rem)/4.8),2.25rem)] uppercase leading-[0.95] lg:text-[length:clamp(1.5rem,calc((100cqw_-_4.5rem)/4.8),3rem)]",
-            !open && "md:min-h-[2lh]",
-            "motion-safe:transition-[min-height] motion-safe:duration-700",
-            EASE,
-          )}
-        >
+        <h3 className="mt-2 font-display text-4xl uppercase leading-[0.95] md:h-[2lh] md:w-[var(--col)] md:text-[length:clamp(1.25rem,calc((var(--col)_-_2.75rem)/5.4),3rem)]">
           {/* The button's ::after covers the whole panel, so a tap anywhere toggles it. */}
           <button
             type="button"
             aria-expanded={open}
             aria-controls={detailsId}
             onClick={onClick}
-            className="flex w-full items-start justify-between gap-4 text-left after:absolute after:inset-0"
+            className="flex w-full items-start justify-between gap-3 text-left after:absolute after:inset-0"
           >
-            <span>{service.title}</span>
+            <span className="min-w-0 [overflow-wrap:anywhere]">{service.title}</span>
             <span
               aria-hidden
               className={cn(
-                "grid size-[max(1.5rem,0.75em)] shrink-0 place-items-center border border-white/50 font-sans leading-none",
+                "mt-[calc((0.95em_-_2rem)/2)] grid size-8 shrink-0 place-items-center border border-white/50 font-sans leading-none",
                 open && "border-accent-bright text-accent-bright",
                 "motion-safe:transition-colors motion-safe:duration-500",
               )}
             >
               <span
                 className={cn(
-                  "block text-[length:max(0.875rem,0.5em)] leading-none motion-safe:transition-transform motion-safe:duration-500",
+                  "block text-xl leading-none motion-safe:transition-transform motion-safe:duration-500",
                   EASE,
                   open && "rotate-45",
                 )}
@@ -182,14 +209,7 @@ function ServicePanel({
             </span>
           </button>
         </h3>
-        <p
-          className={cn(
-            "mt-3 max-w-md leading-relaxed text-white",
-            !open && "md:min-h-[4lh]",
-            "motion-safe:transition-[min-height] motion-safe:duration-700",
-            EASE,
-          )}
-        >
+        <p className="mt-3 max-w-md leading-relaxed text-white md:h-[5lh] md:w-[var(--col)] md:text-[length:clamp(0.8125rem,calc(var(--col)/14),1rem)]">
           {service.summary}
         </p>
 
@@ -201,20 +221,20 @@ function ServicePanel({
           className={cn(
             "grid motion-safe:transition-[grid-template-rows] motion-safe:duration-500",
             EASE,
-            open ? "grid-rows-[1fr]" : "grid-rows-[0fr]",
+            open ? "grid-rows-[1fr]" : "grid-rows-[0fr] md:grid-rows-[1fr]",
           )}
         >
-          <div className="overflow-hidden">
+          <div className="overflow-hidden md:w-[var(--open)]">
             <ul className="mt-5 max-w-md space-y-2 border-t border-white/25 pt-5">
               {service.details.map((d, i) => (
                 <li
                   key={d}
                   data-noscript-show
-                  style={{ transitionDelay: open ? `${150 + i * 70}ms` : "0ms" }}
+                  style={{ transitionDelay: open ? `${220 + i * 60}ms` : "0ms" }}
                   className={cn(
                     "flex gap-3 text-sm text-white",
-                    open ? "translate-y-0 opacity-100" : "translate-y-2 opacity-0",
-                    "motion-safe:transition-[opacity,transform] motion-safe:duration-500",
+                    open ? "opacity-100" : "opacity-0",
+                    "motion-safe:transition-opacity motion-safe:duration-500",
                   )}
                 >
                   <span aria-hidden className="mt-1.5 h-1.5 w-1.5 shrink-0 bg-accent-bright" />
@@ -226,11 +246,11 @@ function ServicePanel({
               href="#book"
               onClick={() => requestBooking(service.title)}
               data-noscript-show
-              style={{ transitionDelay: open ? `${150 + service.details.length * 70}ms` : "0ms" }}
+              style={{ transitionDelay: open ? `${220 + service.details.length * 60}ms` : "0ms" }}
               className={cn(
                 "relative z-10 mt-6",
-                open ? "translate-y-0 opacity-100" : "translate-y-2 opacity-0",
-                "motion-safe:transition-[opacity,transform,background-color] motion-safe:duration-500",
+                open ? "opacity-100" : "opacity-0",
+                "motion-safe:transition-[opacity,background-color] motion-safe:duration-500",
               )}
             >
               Book now <ArrowIcon />
