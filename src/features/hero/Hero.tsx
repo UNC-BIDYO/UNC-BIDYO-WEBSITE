@@ -22,7 +22,7 @@ export function Hero() {
   // Never "playing" in the prerendered HTML or during hydration: the real preferences are
   // only known after, and starting early would download the video for reduced-motion users.
   const playing = hydrated && (choice ? choice === "play" : !reduced && !saveData);
-  // Only attach the 1.3 MB source once the video should actually play; until then the poster is enough.
+  // Only attach the 7.6 MB source (60 s, 720p) once the video should actually play; until then the poster is enough.
   const [loadVideo, setLoadVideo] = useState(false);
   if (playing && !loadVideo) setLoadVideo(true);
 
@@ -69,7 +69,7 @@ export function Hero() {
             Capturing the moments of every UNCean.
           </h1>
           <p className="mt-6 max-w-xl text-lg leading-relaxed text-white sm:text-xl motion-safe:animate-rise motion-safe:[animation-delay:260ms]">
-            [placeholder]
+            A non-academic s
           </p>
           <div className="mt-9 flex flex-wrap items-center gap-x-6 gap-y-4 motion-safe:animate-rise motion-safe:[animation-delay:380ms]">
             <ButtonLink href="#book" size="lg">
