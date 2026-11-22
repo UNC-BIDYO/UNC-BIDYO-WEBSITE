@@ -1,0 +1,3 @@
+# Git LFS hook (husky owns core.hooksPath, so LFS can't install its own).
+command -v git-lfs >/dev/null 2>&1 || { echo >&2 "This repo uses Git LFS, but git-lfs was not found. Install it from https://git-lfs.com"; exit 2; }
+git lfs post-commit "$@"
